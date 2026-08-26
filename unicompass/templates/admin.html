@@ -1,63 +1,87 @@
 {% extends "layout.html" %}
 {% block title %}— Admin{% endblock %}
 {% block content %}
-<p style="color:#555; margin-bottom:1rem;">Completion progress per affiliate.</p>
-<div style="margin-bottom:1rem;">
-  <label for="year" style="font-weight:600; margin-right:0.5rem;">Year:</label>
-  <select id="year" onchange="window.location.href='?year='+this.value" style="padding:0.35rem; border:1px solid #ccc; border-radius:3px;">
+<div class="page-intro">
+  <p>Completion progress per organisation and sector combination from <code>users.csv</code>.</p>
+</div>
+<div class="filter-bar" style="margin-bottom:1rem; display:flex; align-items:center; gap:0.6rem;">
+  <label for="year" style="font-weight:600; color:#1a3a5c;">Year:</label>
+  <select id="year" onchange="window.location.href='?year='+this.value"
+    style="padding:0.3rem 0.6rem; border:1px solid #ccc; border-radius:4px; font-size:0.85rem; background:#fff;">
     <option value="" {% if not selected_year %}selected{% endif %}>All years</option>
     {% for y in years %}
     <option value="{{ y }}" {% if selected_year == y %}selected{% endif %}>{{ y }}</option>
     {% endfor %}
   </select>
 </div>
-{% if not orgs %}
-  <p style="color:#888;">No organisations have entered data yet.</p>
+
+{% if not combos %}
+  <p style="color:#888;">No organisation-sector combinations found in <code>users.csv</code>.</p>
 {% else %}
-<div class="table-wrap"><table style="border-collapse:collapse; width:100%; font-size:0.85rem;">
-  <thead>
-    <tr>
-      <th style="text-align:left; padding:0.4rem 0.6rem; border-bottom:2px solid #1a3a5c;">Organisation</th>
-      <th style="text-align:center; padding:0.4rem 0.6rem; border-bottom:2px solid #1a3a5c;">Annual Results</th>
-      <th style="text-align:center; padding:0.4rem 0.6rem; border-bottom:2px solid #1a3a5c;">Agreements</th>
-      <th style="text-align:center; padding:0.4rem 0.6rem; border-bottom:2px solid #1a3a5c;">Companies</th>
-      <th style="text-align:center; padding:0.4rem 0.6rem; border-bottom:2px solid #1a3a5c;">Actions</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for org in orgs %}
-    {% set p = progress.get(org, {}) %}
-    <tr>
-      <td style="padding:0.4rem 0.6rem; border-bottom:1px solid #ddd; font-weight:600;">{{ org }}</td>
-      <td style="padding:0.4rem 0.6rem; border-bottom:1px solid #ddd; text-align:center;">
-        {% set a = p.get('annual', {}) %}
-        {{ a.get('filled', 0) }}/{{ a.get('total', 0) }}
-        <div style="height:6px; background:#eee; border-radius:3px; margin-top:3px; width:100px; margin:3px auto 0;">
-          <div style="height:6px; background:#1a3a5c; border-radius:3px; width:{% if a.get('total', 0) > 0 %}{{ (a.get('filled', 0) / a.get('total', 0)) * 100 }}{% else %}0{% endif %}%;"></div>
-        </div>
-      </td>
-      <td style="padding:0.4rem 0.6rem; border-bottom:1px solid #ddd; text-align:center;">
-        {% set a = p.get('agreements', {}) %}
-        {{ a.get('filled', 0) }}/{{ a.get('total', 0) }}
-        <div style="height:6px; background:#eee; border-radius:3px; margin-top:3px; width:100px; margin:3px auto 0;">
-          <div style="height:6px; background:#1a3a5c; border-radius:3px; width:{% if a.get('total', 0) > 0 %}{{ (a.get('filled', 0) / a.get('total', 0)) * 100 }}{% else %}0{% endif %}%;"></div>
-        </div>
-      </td>
-      <td style="padding:0.4rem 0.6rem; border-bottom:1px solid #ddd; text-align:center;">
-        {% set a = p.get('companies', {}) %}
-        {{ a.get('filled', 0) }}/{{ a.get('total', 0) }}
-        <div style="height:6px; background:#eee; border-radius:3px; margin-top:3px; width:100px; margin:3px auto 0;">
-          <div style="height:6px; background:#1a3a5c; border-radius:3px; width:{% if a.get('total', 0) > 0 %}{{ (a.get('filled', 0) / a.get('total', 0)) * 100 }}{% else %}0{% endif %}%;"></div>
-        </div>
-      </td>
-      <td style="padding:0.4rem 0.6rem; border-bottom:1px solid #ddd; text-align:center; white-space:nowrap;">
-        <a href="{{ url_for('annual_results', org=org) }}" style="margin:0 0.3rem;">Annual</a>
-        <a href="{{ url_for('agreements', org=org) }}" style="margin:0 0.3rem;">Agreements</a>
-        <a href="{{ url_for('companies', org=org) }}" style="margin:0 0.3rem;">Companies</a>
-      </td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table></div>
+<div class="table-wrap">
+  <table style="border-collapse:collapse; width:100%; font-size:0.85rem;">
+    <thead>
+      <tr>
+        <th style="text-align:left; padding:0.5rem 0.6rem; border-bottom:2px solid #1a3a5c; color:#1a3a5c;">Organisation</th>
+        <th style="text-align:left; padding:0.5rem 0.6rem; border-bottom:2px solid #1a3a5c; color:#1a3a5c;">Sector</th>
+        <th style="text-align:left; padding:0.5rem 0.6rem; border-bottom:2px solid #1a3a5c; color:#1a3a5c;">Country</th>
+        <th style="text-align:left; padding:0.5rem 0.6rem; border-bottom:2px solid #1a3a5c; color:#1a3a5c;">User(s)</th>
+        <th style="text-align:center; padding:0.5rem 0.6rem; border-bottom:2px solid #1a3a5c; color:#1a3a5c;">Annual Results</th>
+        <th style="text-align:center; padding:0.5rem 0.6rem; border-bottom:2px solid #1a3a5c; color:#1a3a5c;">Agreements</th>
+        <th style="text-align:center; padding:0.5rem 0.6rem; border-bottom:2px solid #1a3a5c; color:#1a3a5c;">Companies</th>
+        <th style="text-align:center; padding:0.5rem 0.6rem; border-bottom:2px solid #1a3a5c; color:#1a3a5c;">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in combos %}
+      {% set p = c.progress %}
+      <tr>
+        <td style="padding:0.5rem 0.6rem; border-bottom:1px solid #ddd; font-weight:600; color:#1a3a5c;">
+          {{ c.organisation }}
+          {% if c.is_admin %}
+          <span style="font-size:0.7rem; background:#1a3a5c; color:#fff; padding:1px 5px; border-radius:3px; margin-left:4px;">Admin</span>
+          {% endif %}
+        </td>
+        <td style="padding:0.5rem 0.6rem; border-bottom:1px solid #ddd;">
+          <span style="background:#eef2f6; color:#1a3a5c; padding:2px 6px; border-radius:3px; font-size:0.8rem; font-weight:500;">
+            {{ c.sector }}
+          </span>
+        </td>
+        <td style="padding:0.5rem 0.6rem; border-bottom:1px solid #ddd; color:#555;">{{ c.country or '—' }}</td>
+        <td style="padding:0.5rem 0.6rem; border-bottom:1px solid #ddd; color:#555; font-size:0.8rem;">
+          {{ c.users|join(', ') if c.users else '—' }}
+        </td>
+        <td style="padding:0.5rem 0.6rem; border-bottom:1px solid #ddd; text-align:center;">
+          {% set a = p.get('annual', {}) %}
+          <div style="font-weight:500; font-size:0.78rem;">{{ a.get('filled', 0) }}/{{ a.get('total', 0) }}</div>
+          <div style="height:6px; background:#eee; border-radius:3px; margin:3px auto 0; width:80px;">
+            <div style="height:6px; background:#1a3a5c; border-radius:3px; width:{% if a.get('total', 0) > 0 %}{{ (a.get('filled', 0) / a.get('total', 0)) * 100 }}{% else %}0{% endif %}%;"></div>
+          </div>
+        </td>
+        <td style="padding:0.5rem 0.6rem; border-bottom:1px solid #ddd; text-align:center;">
+          {% set a = p.get('agreements', {}) %}
+          <div style="font-weight:500; font-size:0.78rem;">{{ a.get('filled', 0) }} entries</div>
+          <div style="height:6px; background:#eee; border-radius:3px; margin:3px auto 0; width:80px;">
+            <div style="height:6px; background:#1a3a5c; border-radius:3px; width:{% if a.get('filled', 0) > 0 %}{{ [a.get('filled', 0) * 10, 100]|min }}{% else %}0{% endif %}%;"></div>
+          </div>
+        </td>
+        <td style="padding:0.5rem 0.6rem; border-bottom:1px solid #ddd; text-align:center;">
+          {% set a = p.get('companies', {}) %}
+          <div style="font-weight:500; font-size:0.78rem;">{{ a.get('filled', 0) }} entries</div>
+          <div style="height:6px; background:#eee; border-radius:3px; margin:3px auto 0; width:80px;">
+            <div style="height:6px; background:#1a3a5c; border-radius:3px; width:{% if a.get('filled', 0) > 0 %}{{ [a.get('filled', 0) * 10, 100]|min }}{% else %}0{% endif %}%;"></div>
+          </div>
+        </td>
+        <td style="padding:0.5rem 0.6rem; border-bottom:1px solid #ddd; text-align:center; white-space:nowrap;">
+          <a href="{{ url_for('annual_results', org=c.organisation, sector=c.sector) }}" style="color:#1a3a5c; margin:0 0.2rem; font-weight:500; text-decoration:underline;">Annual</a>
+          <a href="{{ url_for('agreements', org=c.organisation, sector=c.sector) }}" style="color:#1a3a5c; margin:0 0.2rem; font-weight:500; text-decoration:underline;">Agreements</a>
+          <a href="{{ url_for('companies', org=c.organisation, sector=c.sector) }}" style="color:#1a3a5c; margin:0 0.2rem; font-weight:500; text-decoration:underline;">Companies</a>
+          <a href="{{ url_for('export', org=c.organisation, sector=c.sector) }}" style="color:#28a745; margin:0 0.2rem; font-weight:600; text-decoration:underline;">Export</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
 {% endif %}
 {% endblock %}

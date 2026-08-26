@@ -1,32 +1,70 @@
 {% extends "layout.html" %}
 {% block title %}— Export{% endblock %}
 {% block content %}
-<p style="color:#555; margin-bottom:1rem;">Download all data as CSV (per table) or XLSX (combined workbook). Files are automatically generated after every save.</p>
-{% if not files %}
-<p style="color:#888;">No export files available yet. Save some data first.</p>
-{% else %}
-<table style="border-collapse:collapse; width:100%; font-size:0.85rem;">
-  <thead>
-    <tr>
-      <th style="text-align:left; padding:0.4rem 0.6rem; border-bottom:2px solid #1a3a5c;">File</th>
-      <th style="text-align:right; padding:0.4rem 0.6rem; border-bottom:2px solid #1a3a5c;">Size</th>
-      <th style="text-align:center; padding:0.4rem 0.6rem; border-bottom:2px solid #1a3a5c;"></th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for f in files %}
-    <tr>
-      <td style="padding:0.3rem 0.6rem; border-bottom:1px solid #ddd;">{{ f.name }}</td>
-      <td style="padding:0.3rem 0.6rem; border-bottom:1px solid #ddd; text-align:right; color:#666;">{{ f.size }}</td>
-      <td style="padding:0.3rem 0.6rem; border-bottom:1px solid #ddd; text-align:center;">
-        <a href="{{ url_for('export_download', filename=f.name) }}" style="color:#1a3a5c;">Download</a>
-      </td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
-<p style="margin-top:1rem;">
-  <a href="{{ url_for('export_download_all') }}" style="color:#1a3a5c; font-weight:600;">Download all as ZIP</a>
-</p>
+<div class="page-intro">
+  <p>Download data as CSV (per table) or XLSX (combined workbook). Files are automatically generated and kept up to date.</p>
+</div>
+
+{% if is_admin and db_files %}
+<h2 style="font-size:1.05rem; color:#1a3a5c; margin-top:1rem; margin-bottom:0.5rem;">Full Database (All Affiliates & Sectors)</h2>
+<div class="table-wrap" style="margin-bottom:1.5rem;">
+  <table style="border-collapse:collapse; width:100%; font-size:0.85rem;">
+    <thead>
+      <tr>
+        <th style="text-align:left; padding:0.4rem 0.6rem; border-bottom:2px solid #1a3a5c;">Database Table / Workbook</th>
+        <th style="text-align:right; padding:0.4rem 0.6rem; border-bottom:2px solid #1a3a5c;">Size</th>
+        <th style="text-align:center; padding:0.4rem 0.6rem; border-bottom:2px solid #1a3a5c; width:100px;"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for f in db_files %}
+      <tr>
+        <td style="padding:0.4rem 0.6rem; border-bottom:1px solid #ddd; font-weight:500;">{{ f.name }}</td>
+        <td style="padding:0.4rem 0.6rem; border-bottom:1px solid #ddd; text-align:right; color:#666;">{{ f.size }}</td>
+        <td style="padding:0.4rem 0.6rem; border-bottom:1px solid #ddd; text-align:center;">
+          <a href="{{ url_for('export_download', filename=f.name) }}" style="color:#1a3a5c; font-weight:600; text-decoration:underline;">Download</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
 {% endif %}
+
+{% if is_admin %}
+<h2 style="font-size:1.05rem; color:#1a3a5c; margin-top:1rem; margin-bottom:0.5rem;">Affiliate & Sector Exports</h2>
+{% endif %}
+
+{% if not files %}
+<p style="color:#888;">No export files available for the current selection.</p>
+{% else %}
+<div class="table-wrap" style="margin-bottom:1.2rem;">
+  <table style="border-collapse:collapse; width:100%; font-size:0.85rem;">
+    <thead>
+      <tr>
+        <th style="text-align:left; padding:0.4rem 0.6rem; border-bottom:2px solid #1a3a5c;">File</th>
+        <th style="text-align:right; padding:0.4rem 0.6rem; border-bottom:2px solid #1a3a5c;">Size</th>
+        <th style="text-align:center; padding:0.4rem 0.6rem; border-bottom:2px solid #1a3a5c; width:100px;"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for f in files %}
+      <tr>
+        <td style="padding:0.4rem 0.6rem; border-bottom:1px solid #ddd;">{{ f.name }}</td>
+        <td style="padding:0.4rem 0.6rem; border-bottom:1px solid #ddd; text-align:right; color:#666;">{{ f.size }}</td>
+        <td style="padding:0.4rem 0.6rem; border-bottom:1px solid #ddd; text-align:center;">
+          <a href="{{ url_for('export_download', filename=f.name) }}" style="color:#1a3a5c; font-weight:600; text-decoration:underline;">Download</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<p style="margin-top:1rem;">
+  <a href="{{ url_for('export_download_all') }}" style="display:inline-block; background:#1a3a5c; color:#fff; padding:0.45rem 1.2rem; border-radius:4px; text-decoration:none; font-size:0.85rem; font-weight:500;">
+    Download {% if is_admin %}All (Full DB & Affiliates){% else %}Selected Organisation & Sector{% endif %} as ZIP
+  </a>
+</p>
 {% endblock %}

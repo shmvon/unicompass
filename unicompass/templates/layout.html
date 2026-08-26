@@ -1,75 +1,338 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>UNI Compass {% block title %}{% endblock %}</title>
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #f4f6f8; color: #222; }
-    .nav { background: #1a3a5c; color: #fff; padding: 0 1rem; display: flex; align-items: stretch; justify-content: space-between; font-size: 0.9rem; flex-wrap: wrap; min-height: 44px; }
-    .nav a { color: #fff; text-decoration: none; }
-    .nav .brand { font-weight: 600; font-size: 1.05rem; display: flex; align-items: center; padding-right: 1rem; }
-    .nav .links { display: flex; align-items: stretch; gap: 0; flex-wrap: wrap; }
-    .nav .links a { display: flex; align-items: center; padding: 0 0.8rem; border-bottom: 3px solid transparent; transition: border-color 0.15s, background 0.15s; }
-    .nav .links a:hover { background: rgba(255,255,255,0.08); border-bottom-color: rgba(255,255,255,0.3); text-decoration: none; }
-    .nav .links a.active-tab { background: rgba(255,255,255,0.12); border-bottom-color: #fff; font-weight:600; }
-    .nav .user-info { display: flex; align-items: center; gap: 0.6rem; white-space: nowrap; }
-    .container { width: 75%; max-width: 1400px; margin: 0.8rem auto; padding: 0 1rem; height: calc(100vh - 52px); overflow-y: auto; }
-    .container::-webkit-scrollbar { width: 6px; }
-    .container::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
-    .flash { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 0.75rem 1.25rem; border-radius: 4px; margin-bottom: 1rem; }
-    .flash.error { background: #f8d7da; border-color: #f5c6cb; color: #721c24; }
-    h1 { font-size: 1.3rem; margin-bottom: 0.6rem; }
-    p { margin-bottom: 0.5rem; }
-    .badge { display: inline-block; background: #6c757d; color: #fff; font-size: 0.75rem; padding: 0.15rem 0.5rem; border-radius: 3px; }
-    .badge.admin { background: #d63384; }
-    .table-wrap { width: 100%; overflow-x: auto; overflow-y: hidden; }
-    .table-wrap::-webkit-scrollbar { height: 8px; }
-    .table-wrap::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
-    .table-wrap::-webkit-scrollbar-track { background: #f4f6f8; }
-    .table-wrap table { border-collapse: collapse; }
-    .table-wrap td, .table-wrap th { padding:0.2rem; vertical-align:middle; }
-    .table-wrap th { white-space:nowrap; line-height:1.6rem; height:2.4rem; box-sizing:border-box; }
-    .table-wrap.fixed-rows thead tr { height:2.4rem; }
-    .table-wrap.fixed-rows tbody tr { height:2.2rem; }
-    .table-wrap input, .table-wrap select { box-sizing:border-box; height:1.6rem; line-height:normal; }
-    .sticky-col-1 { position:sticky; left:0; z-index:2; background:#f4f6f8; }
-    .sticky-col-2 { position:sticky; left:3rem; z-index:3; background:#f4f6f8; }
-    th.sticky-col-1, th.sticky-col-2 { z-index:4; }
-    .org-dropdown { position: relative; display: inline-block; }
-    .org-dropdown > span { cursor: pointer; border-bottom: 1px dotted rgba(255,255,255,0.5); }
-    .org-dropdown-menu { display: none; position: absolute; top: 100%; left: 0; background: #fff; border: 1px solid #ccc; border-radius: 4px; min-width: 180px; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
-    .org-dropdown-menu.show { display: block; }
-    .org-dropdown-menu a { display: block; padding: 0.4rem 0.8rem; color: #222 !important; font-size: 0.85rem; text-decoration: none; }
-    .org-dropdown-menu a:hover { background: #eef3f8; text-decoration: none; }
-    .org-dropdown-menu a.active { font-weight: 600; background: #dbeafe; }
-    .add-row-btn { font-size:0.8rem; cursor:pointer; color:#1a3a5c; border:1px dashed #1a3a5c; border-radius:3px; padding:2px 10px; background:#fff; margin-top:4px; display:inline-block; }
-    .add-row-btn:hover { background:#eef3f8; }
-    [data-cmt] { position: relative; cursor: help; }
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #f4f6f8;
+      color: #222;
+    }
+
+    .nav {
+      background: #1a3a5c;
+      color: #fff;
+      padding: 0 1rem;
+      display: flex;
+      align-items: stretch;
+      justify-content: space-between;
+      font-size: 0.9rem;
+      flex-wrap: wrap;
+      min-height: 44px;
+    }
+
+    .nav a {
+      color: #fff;
+      text-decoration: none;
+    }
+
+    .nav .brand {
+      font-weight: 600;
+      font-size: 1.05rem;
+      display: flex;
+      align-items: center;
+      padding-right: 1rem;
+    }
+
+    .nav .links {
+      display: flex;
+      align-items: stretch;
+      gap: 0;
+      flex-wrap: wrap;
+    }
+
+    .nav .links a {
+      display: flex;
+      align-items: center;
+      padding: 0 0.8rem;
+      border-bottom: 3px solid transparent;
+      transition: border-color 0.15s, background 0.15s;
+    }
+
+    .nav .links a:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-bottom-color: rgba(255, 255, 255, 0.3);
+      text-decoration: none;
+    }
+
+    .nav .links a.active-tab {
+      background: rgba(255, 255, 255, 0.12);
+      border-bottom-color: #fff;
+      font-weight: 600;
+    }
+
+    .nav .user-info {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      white-space: nowrap;
+    }
+
+    .container {
+      width: 75%;
+      max-width: 1400px;
+      margin: 0.8rem auto;
+      padding: 0 1rem;
+      height: calc(100vh - 52px);
+      overflow-y: auto;
+    }
+
+    .container::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .container::-webkit-scrollbar-thumb {
+      background: #ccc;
+      border-radius: 3px;
+    }
+
+    .flash {
+      background: #d4edda;
+      border: 1px solid #c3e6cb;
+      color: #155724;
+      padding: 0.75rem 1.25rem;
+      border-radius: 4px;
+      margin-bottom: 1rem;
+    }
+
+    .flash.error {
+      background: #f8d7da;
+      border-color: #f5c6cb;
+      color: #721c24;
+    }
+
+    h1 {
+      font-size: 1.3rem;
+      margin-bottom: 0.6rem;
+    }
+
+    p {
+      margin-bottom: 0.5rem;
+    }
+
+    .badge {
+      display: inline-block;
+      background: #6c757d;
+      color: #fff;
+      font-size: 0.75rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 3px;
+    }
+
+    .badge.admin {
+      background: #d63384;
+    }
+
+    .table-wrap {
+      width: 100%;
+      overflow-x: auto;
+      overflow-y: hidden;
+    }
+
+    .table-wrap::-webkit-scrollbar {
+      height: 8px;
+    }
+
+    .table-wrap::-webkit-scrollbar-thumb {
+      background: #ccc;
+      border-radius: 4px;
+    }
+
+    .table-wrap::-webkit-scrollbar-track {
+      background: #f4f6f8;
+    }
+
+    .table-wrap table {
+      border-collapse: collapse;
+    }
+
+    .table-wrap td,
+    .table-wrap th {
+      padding: 0.2rem;
+      vertical-align: middle;
+    }
+
+    .table-wrap th {
+      white-space: nowrap;
+      line-height: 1.6rem;
+      height: 2.4rem;
+      box-sizing: border-box;
+    }
+
+    .table-wrap.fixed-rows thead tr {
+      height: 2.4rem;
+    }
+
+    .table-wrap.fixed-rows tbody tr {
+      height: 2.2rem;
+    }
+
+    .table-wrap input,
+    .table-wrap select {
+      box-sizing: border-box;
+      height: 1.6rem;
+      line-height: normal;
+    }
+
+    .sticky-col-1 {
+      position: sticky;
+      left: 0;
+      z-index: 2;
+      background: #f4f6f8;
+    }
+
+    .sticky-col-2 {
+      position: sticky;
+      left: 3rem;
+      z-index: 3;
+      background: #f4f6f8;
+    }
+
+    th.sticky-col-1,
+    th.sticky-col-2 {
+      z-index: 4;
+    }
+
+    .org-dropdown {
+      position: relative;
+      display: inline-block;
+    }
+
+    .org-dropdown>span {
+      cursor: pointer;
+      border-bottom: 1px dotted rgba(255, 255, 255, 0.5);
+    }
+
+    .org-dropdown-menu {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      background: #fff;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      min-width: 180px;
+      z-index: 100;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    .org-dropdown-menu.show {
+      display: block;
+    }
+
+    .org-dropdown-menu a {
+      display: block;
+      padding: 0.4rem 0.8rem;
+      color: #222 !important;
+      font-size: 0.85rem;
+      text-decoration: none;
+    }
+
+    .org-dropdown-menu a:hover {
+      background: #eef3f8;
+      text-decoration: none;
+    }
+
+    .org-dropdown-menu a.active {
+      font-weight: 600;
+      background: #dbeafe;
+    }
+
+    .add-row-btn {
+      font-size: 0.8rem;
+      cursor: pointer;
+      color: #1a3a5c;
+      border: 1px dashed #1a3a5c;
+      border-radius: 3px;
+      padding: 2px 10px;
+      background: #fff;
+      margin-top: 4px;
+      display: inline-block;
+    }
+
+    .add-row-btn:hover {
+      background: #eef3f8;
+    }
+
+    [data-cmt] {
+      position: relative;
+      cursor: help;
+    }
+
     [data-cmt]::after {
       content: attr(data-cmt);
-      position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%);
-      background: #333; color: #fff; padding: 4px 8px; border-radius: 4px;
-      font-size: 0.75rem; pointer-events: none;
-      opacity: 0; transition: opacity 0.15s ease; z-index: 20;
-      width: 250px; max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: normal; line-height: 1.3;
+      text-align: left;
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #333;
+      color: #fff;
+      padding: 6px 10px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.15s ease;
+      z-index: 20;
+      width: 250px;
+      max-width: 250px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: normal;
+      line-height: 1.3;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
     }
-    [data-cmt]:hover::after { opacity: 1; transition-delay: 0.15s; }
-    
+
+    [data-cmt]:hover::after {
+      opacity: 1;
+      transition-delay: 0.15s;
+    }
+
     /* Variable Definition styled tooltip */
-    .var-def { position: relative; border-bottom: 1px dotted #888; cursor: help; }
-    .var-def::after {
-      content: attr(title);
-      position: absolute; bottom: 100%; left: 0;
-      background: #333; color: #fff; padding: 6px 10px; border-radius: 4px;
-      font-size: 0.75rem; pointer-events: none; opacity: 0;
-      transition: opacity 0.15s ease; z-index: 100;
-      width: 280px; white-space: normal; line-height: 1.4;
-      font-weight: normal;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    .var-def {
+      position: relative;
+      border-bottom: 1px dotted #888;
+      cursor: help;
     }
-    .var-def:hover::after { opacity: 1; transition-delay: 0.15s; }
+
+    .var-def::after {
+      content: attr(data-def);
+      text-align: left;
+      position: absolute;
+      bottom: 100%;
+      left: 0;
+      background: #333;
+      color: #fff;
+      padding: 6px 10px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.15s ease;
+      z-index: 100;
+      width: 280px;
+      white-space: normal;
+      line-height: 1.4;
+      font-weight: normal;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .var-def:hover::after {
+      opacity: 1;
+      transition-delay: 0.15s;
+    }
 
     /* Show header tooltips below the header to prevent vertical clipping in overflow scroll containers */
     th .var-def::after {
@@ -79,6 +342,7 @@
       transform: translateX(-50%);
       margin-top: 6px;
     }
+
     /* Last 3 columns: extend leftward so the tooltip stays within the table, no horizontal scroll needed */
     .table-wrap th:nth-last-child(-n+3) .var-def::after {
       left: auto;
@@ -87,190 +351,670 @@
     }
 
     /* Value field width constraints — prevent expansion but don't collapse */
-    .cell-num, .cell-qual { max-width:60px; box-sizing:border-box; }
+    .cell-num,
+    .cell-qual {
+      max-width: 80px;
+      box-sizing: border-box;
+    }
 
     /* Switch toggle styling */
-    .switch-toggle { position:relative; display:inline-block; width:36px; height:18px; vertical-align:middle; cursor:pointer; }
-    .switch-toggle input { opacity:0; width:0; height:0; }
-    .switch-slider { position:absolute; inset:0; background:#888; border-radius:18px; transition:0.2s; }
-    .switch-slider::before { content:''; position:absolute; left:2px; bottom:2px; width:14px; height:14px; background:#fff; border-radius:50%; transition:0.2s; }
-    .switch-toggle input:checked + .switch-slider { background:#1a3a5c; }
-    .switch-toggle input:checked + .switch-slider::before { transform:translateX(18px); }
-    @media (max-width: 1200px) {
-      .container { width: 90%; }
+    .switch-toggle {
+      position: relative;
+      display: inline-block;
+      width: 36px;
+      height: 18px;
+      vertical-align: middle;
+      cursor: pointer;
     }
+
+    .switch-toggle input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .switch-slider {
+      position: absolute;
+      inset: 0;
+      background: #888;
+      border-radius: 18px;
+      transition: 0.2s;
+    }
+
+    .switch-slider::before {
+      content: '';
+      position: absolute;
+      left: 2px;
+      bottom: 2px;
+      width: 14px;
+      height: 14px;
+      background: #fff;
+      border-radius: 50%;
+      transition: 0.2s;
+    }
+
+    .switch-toggle input:checked+.switch-slider {
+      background: #1a3a5c;
+    }
+
+    .switch-toggle input:checked+.switch-slider::before {
+      transform: translateX(18px);
+    }
+
+    @media (max-width: 1200px) {
+      .container {
+        width: 90%;
+      }
+    }
+
     @media (max-width: 700px) {
-      .nav .links { order: 3; width: 100%; justify-content: center; }
-      .nav .links a { padding: 0.5rem 0.6rem; }
-      .nav .user-info { font-size: 0.8rem; }
-      .container { width: 100%; padding: 0 0.5rem; }
+      .nav .links {
+        order: 3;
+        width: 100%;
+        justify-content: center;
+      }
+
+      .nav .links a {
+        padding: 0.5rem 0.6rem;
+      }
+
+      .nav .user-info {
+        font-size: 0.8rem;
+      }
+
+      .container {
+        width: 100%;
+        padding: 0 0.5rem;
+      }
     }
 
     /* Popup overlay */
-    .popup-backdrop { position:fixed; inset:0; background:rgba(0,0,0,0.3); z-index:999; display:none; align-items:center; justify-content:center; }
-    .popup-card { background:#fff; border-radius:8px; padding:1.5rem; min-width:380px; max-width:480px; width:90%; box-shadow:0 4px 20px rgba(0,0,0,0.2); }
-    .popup-card h3 { font-size:1rem; margin-bottom:0.6rem; }
-    .popup-card label { display:block; font-size:0.8rem; color:#555; margin-bottom:0.2rem; }
+    .popup-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.3);
+      z-index: 999;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .popup-card {
+      background: #fff;
+      border-radius: 8px;
+      padding: 1.5rem;
+      min-width: 380px;
+      max-width: 480px;
+      width: 90%;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    .popup-card h3 {
+      font-size: 1rem;
+      margin-bottom: 0.6rem;
+    }
+
+    .popup-card label {
+      display: block;
+      font-size: 0.8rem;
+      color: #555;
+      margin-bottom: 0.2rem;
+    }
+
     .popup-card input[type="text"],
-    .popup-card textarea { width:100%; padding:0.4rem; border:1px solid #ccc; border-radius:4px; font-size:0.85rem; margin-bottom:0.8rem; box-sizing:border-box; }
-    .popup-card textarea { min-height:80px; resize:vertical; }
-    .popup-actions { display:flex; gap:0.5rem; justify-content:flex-end; }
-    .popup-actions button { padding:0.4rem 1rem; border-radius:4px; cursor:pointer; border:none; font-size:0.85rem; }
-    .popup-actions .btn-primary { background:#1a3a5c; color:#fff; }
-    .popup-actions .btn-primary:hover { background:#2a5a8c; }
-    .popup-actions .btn-cancel { background:#e0e0e0; color:#333; }
-    .popup-actions .btn-cancel:hover { background:#ccc; }
-    .popup-trigger { cursor:pointer; display:inline-flex; align-items:center; gap:4px; border:1px solid #ccc; border-radius:3px; padding:2px 6px; background:#f5f5f5; max-width:210px; position:relative; }
-    .popup-title { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:inline-block; vertical-align:middle; font-size:0.8rem; color:#444; }
-    .edit-icon { font-size:0.7rem; color:#999; cursor:pointer; vertical-align:middle; flex-shrink:0; }
+    .popup-card textarea {
+      width: 100%;
+      padding: 0.4rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      margin-bottom: 0.8rem;
+      box-sizing: border-box;
+    }
+
+    .popup-card textarea {
+      min-height: 80px;
+      resize: vertical;
+    }
+
+    .popup-actions {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: flex-end;
+    }
+
+    .popup-actions button {
+      padding: 0.4rem 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+      border: none;
+      font-size: 0.85rem;
+    }
+
+    .popup-actions .btn-primary {
+      background: #1a3a5c;
+      color: #fff;
+    }
+
+    .popup-actions .btn-primary:hover {
+      background: #2a5a8c;
+    }
+
+    .popup-actions .btn-cancel {
+      background: #e0e0e0;
+      color: #333;
+    }
+
+    .popup-actions .btn-cancel:hover {
+      background: #ccc;
+    }
+
+    .popup-trigger {
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      border: 1px solid #ccc;
+      border-radius: 3px;
+      padding: 2px 6px;
+      background: #f5f5f5;
+      max-width: 210px;
+      position: relative;
+    }
+
+    .popup-title {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      display: inline-block;
+      vertical-align: middle;
+      font-size: 0.8rem;
+      color: #444;
+    }
+
+    .edit-icon {
+      font-size: 0.7rem;
+      color: #999;
+      cursor: pointer;
+      vertical-align: middle;
+      flex-shrink: 0;
+    }
+
     .popup-trigger::after {
       content: attr(data-def);
-      position: absolute; bottom: 100%; left: 0; margin-bottom: 6px;
-      background: #333; color: #fff; padding: 6px 10px; border-radius: 4px;
-      font-size: 0.75rem; pointer-events: none; opacity: 0;
-      transition: opacity 0.15s ease; z-index: 100;
-      width: 280px; white-space: normal; line-height: 1.4;
+      position: absolute;
+      bottom: 100%;
+      left: 0;
+      margin-bottom: 6px;
+      background: #333;
+      color: #fff;
+      padding: 6px 10px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.15s ease;
+      z-index: 100;
+      width: 280px;
+      white-space: normal;
+      line-height: 1.4;
       font-weight: normal;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
     }
-    .popup-trigger:hover::after { opacity: 1; transition-delay: 0.15s; }
+
+    .popup-trigger:hover::after {
+      opacity: 1;
+      transition-delay: 0.15s;
+    }
+
+    /* Unified Non-Table Typography & Layout Styles */
+    .viewing-banner {
+      margin-bottom: 0.5rem;
+      font-size: 0.88rem;
+      color: #d63384;
+      font-weight: 500;
+    }
+
+    .viewing-banner strong {
+      font-weight: 700;
+    }
+
+    .page-intro {
+      color: #1a3a5c;
+      font-size: 0.88rem;
+      line-height: 1.5;
+      margin-bottom: 1.1rem;
+    }
+
+    .page-intro p {
+      margin-bottom: 0.5rem;
+    }
+
+    .page-intro .note {
+      margin-bottom: 0.5rem;
+    }
+
+    .page-intro .note-title {
+      margin-bottom: 0.25rem;
+      font-style: normal;
+    }
+
+    .page-intro ul {
+      margin-left: 1.5rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .page-intro li {
+      margin-bottom: 0.2rem;
+    }
+
+    /* Heatmap Legend */
+    .heatmap-legend {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+      color: #1a3a5c;
+      font-size: 0.88rem;
+    }
+
+    .heatmap-swatch-low {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border-radius: 2px;
+      background: rgba(37, 99, 235, 0.35);
+      border: 1px solid rgba(37, 99, 235, 0.5);
+    }
+
+    .heatmap-bar {
+      display: inline-block;
+      width: 48px;
+      height: 6px;
+      border-radius: 3px;
+      background: linear-gradient(to right, rgba(37, 99, 235, 0.35), rgba(250, 204, 21, 0.45));
+    }
+
+    .heatmap-swatch-high {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border-radius: 2px;
+      background: rgba(250, 204, 21, 0.45);
+      border: 1px solid rgba(250, 204, 21, 0.6);
+    }
+
+    .heatmap-label {
+      margin-left: 0.4rem;
+    }
+
+    /* Filter Bar */
+    .filter-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin-bottom: 1rem;
+      color: #1a3a5c;
+      font-size: 0.88rem;
+    }
+
+    .filter-bar label {
+      font-weight: 600;
+    }
+
+    .filter-bar select {
+      padding: 0.35rem 0.6rem;
+      border: 1px solid #ccc;
+      border-radius: 3px;
+      font-size: 0.85rem;
+      color: #1a3a5c;
+      background: #fff;
+    }
+
+    /* Row Toggle Buttons (detail / proxy) */
+    .row-toggle {
+      font-size: 0.65rem;
+      font-weight: 600;
+      padding: 2px 7px;
+      margin-right: 5px;
+      cursor: pointer;
+      border: 1px solid #1a3a5c;
+      border-radius: 3px;
+      background: #f0f4f8;
+      color: #1a3a5c;
+      line-height: 1.3;
+      vertical-align: middle;
+      transition: all 0.15s ease-in-out;
+    }
+
+    .row-toggle:hover {
+      background: #1a3a5c;
+      color: #ffffff;
+      box-shadow: 0 1px 4px rgba(26, 58, 92, 0.3);
+    }
+
+    /* Qualitative Report Button */
+    .report-btn {
+      padding: 0.25rem 0.6rem;
+      font-size: 0.75rem;
+      border-radius: 4px;
+      border: 1px solid #e0e0e0;
+      background: #f7f9fa;
+      color: #888;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      white-space: nowrap;
+      margin: 2px auto;
+      cursor: default;
+      transition: all 0.15s ease-in-out;
+      text-decoration: none;
+    }
+
+    .report-btn.active-editing {
+      border-color: #1a3a5c;
+      background: #eef4fa;
+      color: #1a3a5c;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .report-btn.active-editing:hover {
+      background: #1a3a5c;
+      color: #ffffff;
+      box-shadow: 0 1px 4px rgba(26, 58, 92, 0.3);
+    }
+
+    .report-btn.active-editing:hover span {
+      color: #ffffff !important;
+    }
+
+    /* Form Actions & Buttons */
+    .form-actions {
+      margin-top: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .btn-save {
+      background: #1a3a5c;
+      color: #fff;
+      border: none;
+      padding: 0.5rem 1.5rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.88rem;
+      font-weight: 500;
+      transition: background 0.15s;
+    }
+
+    .btn-save:hover {
+      background: #244d75;
+    }
+
+    .link-back {
+      color: #1a3a5c;
+      font-size: 0.88rem;
+      text-decoration: none;
+    }
+
+    .link-back:hover {
+      text-decoration: underline;
+    }
   </style>
 </head>
+
 <body>
   <nav class="nav">
     <a href="{{ url_for('dashboard') }}" class="brand">UNI Compass</a>
     <div class="links">
       {% set nav_pages = [
-        ('dashboard', 'Home'),
-        ('annual_results', 'Annual results'),
-        ('agreements', 'Major agreements'),
-        ('companies', 'Major companies'),
-        ('example', 'Example'),
-        ('export', 'Export'),
+      ('dashboard', 'Home'),
+      ('annual_results', 'Annual results'),
+      ('agreements', 'Major agreements'),
+      ('companies', 'Major companies'),
+      ('example', 'Example'),
+      ('export', 'Export'),
       ] %}
       {% for route, label in nav_pages %}
       {% set href = url_for(route, org=view_org) if is_admin and view_org else url_for(route) %}
-      <a href="{{ href }}" {% if current_page == url_for(route) %}class="active-tab"{% endif %}>{{ label }}</a>
+      <a href="{{ href }}" {% if current_page==url_for(route) %}class="active-tab" {% endif %}>{{ label }}</a>
       {% endfor %}
       {% if is_admin %}
       {% set admin_href = url_for('admin', org=view_org) if view_org else url_for('admin') %}
-      <a href="{{ admin_href }}" {% if current_page == url_for('admin') %}class="active-tab"{% endif %} style="font-weight:600;">Admin</a>
+      <a href="{{ admin_href }}" {% if current_page==url_for('admin') %}class="active-tab" {% endif %}
+        style="font-weight:600;">Admin</a>
       {% endif %}
     </div>
-    <div class="user-info">
-      {% if current_email %}
-        {% if is_admin and all_orgs %}
-          <span style="color:rgba(255,255,255,0.7); font-size:0.8rem;">viewing as</span>
-          <div class="org-dropdown" id="orgDropdown">
-            <span onclick="toggleOrgMenu()">{{ view_org }}</span>
-            <div class="org-dropdown-menu" id="orgMenu">
-              {% for o in all_orgs %}
-              <a href="{{ current_page }}?org={{ o|urlencode }}" class="{% if o == view_org %}active{% endif %}">{{ o }}</a>
-              {% endfor %}
-              <hr style="margin:0.2rem 0; border:none; border-top:1px solid #ddd;">
-              <a href="{{ url_for('admin') }}" style="color:#1a3a5c !important;">Admin overview</a>
-            </div>
-          </div>
-          {% if is_admin %}<span class="badge admin">Admin</span>{% endif %}
-        {% else %}
-          <span>{{ current_email }}</span>
-          <span class="badge" style="background:#28a745;">{{ session_org }}</span>
-        {% endif %}
-        <a href="{{ url_for('logout') }}">Logout</a>
+    <div class="user-info" style="display:flex; align-items:center; gap:0.6rem;">
+      {% if current_user %}
+      <!-- 1. Sector (dropdown if multiple / badge if 1) -->
+      {% if user_sectors|length > 1 or is_admin %}
+      <div class="sector-dropdown-wrapper" style="display:inline-flex; align-items:center; gap:0.3rem;">
+        <label for="sectorSelect"
+          style="color:rgba(255,255,255,0.7); font-size:0.75rem; text-transform:uppercase; letter-spacing:0.5px;"></label>
+        <select id="sectorSelect"
+          onchange="window.location.href='/set-sector?sector='+encodeURIComponent(this.value)+'&next='+encodeURIComponent(window.location.pathname+window.location.search)"
+          style="background:rgba(255,255,255,0.15); color:#fff; border:1px solid rgba(255,255,255,0.3); border-radius:4px; padding:0.2rem 0.45rem; font-size:0.8rem; cursor:pointer; outline:none;">
+          {% for s in all_sectors %}
+          <option value="{{ s }}" {% if s==current_sector %}selected{% endif %} style="color:#222; background:#fff;">{{
+            s }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      {% else %}
+      <span class="badge"
+        style="background:rgba(255,255,255,0.2); color:#fff; font-weight:500; font-size:0.8rem; padding:0.25rem 0.5rem; border-radius:4px;">{{
+        current_sector }}</span>
+      {% endif %}
+
+      <!-- 2. Button with Organisation (with switcher for admin) -->
+      {% if is_admin and all_orgs %}
+      <div class="org-dropdown" id="orgDropdown">
+        <span onclick="toggleOrgMenu()"
+          style="background:#28a745; color:#fff; padding:0.25rem 0.65rem; border-radius:4px; font-size:0.8rem; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:0.3rem;">
+          {{ view_org }} <span style="font-size:0.7rem; opacity:0.8;">&#x25BE;</span>
+        </span>
+        <div class="org-dropdown-menu" id="orgMenu">
+          <div
+            style="padding:0.3rem 0.6rem; font-size:0.75rem; color:#666; font-weight:600; border-bottom:1px solid #eee;">
+            Switch Organisation</div>
+          {% for o in all_orgs %}
+          <a href="{{ current_page }}?org={{ o|urlencode }}" class="{% if o == view_org %}active{% endif %}">{{ o }}</a>
+          {% endfor %}
+          <hr style="margin:0.2rem 0; border:none; border-top:1px solid #ddd;">
+          <a href="{{ url_for('admin') }}" style="color:#1a3a5c !important; font-weight:600;">Admin overview</a>
+        </div>
+      </div>
+      {% else %}
+      <span class="org-badge-btn"
+        style="background:#28a745; color:#fff; padding:0.25rem 0.65rem; border-radius:4px; font-size:0.8rem; font-weight:600;">{{
+        session_org }}</span>
+      {% endif %}
+
+      <!-- 3. Logout (with thin line showing username on hover) -->
+      <a href="{{ url_for('logout') }}"
+        title="{{ current_user }}"
+        style="color:rgba(255,255,255,0.9); font-size:0.85rem; text-decoration:none; margin-left:0.3rem; border-bottom:1px dotted rgba(255,255,255,0.6); padding-bottom:1px; cursor:pointer;"
+        onmouseover="this.style.borderBottomColor='#fff'; this.style.color='#fff';"
+        onmouseout="this.style.borderBottomColor='rgba(255,255,255,0.6)'; this.style.color='rgba(255,255,255,0.9)';">Logout</a>
       {% endif %}
     </div>
   </nav>
   <div class="container">
     {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        {% for category, message in messages %}
-          <div class="flash{% if category == 'error' %} error{% endif %}">{{ message }}</div>
-        {% endfor %}
-      {% endif %}
+    {% if messages %}
+    {% for category, message in messages %}
+    <div class="flash{% if category == 'error' %} error{% endif %}">{{ message }}</div>
+    {% endfor %}
+    {% endif %}
     {% endwith %}
     {% block content %}{% endblock %}
   </div>
   <div id="popupBackdrop" class="popup-backdrop">
     <div class="popup-card" onclick="event.stopPropagation()">
-      <h3 id="popupHeader">Edit entry</h3>
-      <label for="popupTitleInput">Short title <span id="popupCharHint"></span></label>
-      <input type="text" id="popupTitleInput" maxlength="80" placeholder="Short description (appears in table)">
-      <label for="popupContentInput">Full content <span id="popupCharLimit"></span></label>
-      <textarea id="popupContentInput" rows="4" placeholder="Detailed content..." oninput="checkCharLimit(this)"></textarea>
-      <div class="popup-actions">
-        <button class="btn-cancel" onclick="closePopup()">Cancel</button>
-        <button class="btn-primary" onclick="savePopup()">Done</button>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.8rem;">
+        <h3 id="popupHeader" style="margin:0; font-size:1.05rem; color:#1a3a5c;">Edit entry</h3>
+        <button type="button" onclick="closePopup()"
+          style="background:none; border:none; font-size:1.3rem; cursor:pointer; color:#888; line-height:1;">&times;</button>
+      </div>
+      <label for="popupTitleInput" style="font-weight:600; margin-bottom:0.25rem; font-size:0.8rem; color:#444;">Short
+        title / summary:</label>
+      <input type="text" id="popupTitleInput" maxlength="60" placeholder="Title (appears in table cell)"
+        style="width:100%; padding:0.4rem; border:1px solid #ccc; border-radius:4px; font-size:0.85rem; margin-bottom:0.8rem; box-sizing:border-box;">
+      <div
+        style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.25rem; font-size:0.8rem;">
+        <label for="popupContentInput" style="font-weight:600; margin:0; color:#444;">Detailed content:</label>
+        <span id="popupWordCountDisplay" style="font-weight:600; font-size:0.75rem; color:#666;">0 words</span>
+      </div>
+      <textarea id="popupContentInput" rows="5" placeholder="Detailed content..."
+        style="width:100%; padding:0.5rem; border:1px solid #ccc; border-radius:4px; font-size:0.85rem; resize:vertical; line-height:1.4; box-sizing:border-box;"
+        oninput="handlePopupContentInput(this)"></textarea>
+      <div class="popup-actions" style="margin-top:1rem;">
+        <button type="button" class="btn-cancel" onclick="closePopup()">Cancel</button>
+        <button type="button" class="btn-primary" onclick="savePopup()">Done</button>
       </div>
     </div>
   </div>
 
   <script>
-  function checkCharLimit(el, max) {
-    if (max === undefined) max = parseInt(el.dataset.maxchars || '280');
-    if (el.value.length > max) {
-      el.value = el.value.slice(0, max);
+    function countWords(str) {
+      if (!str || !str.trim()) return 0;
+      return str.trim().split(/\s+/).filter(function (w) { return w.length > 0; }).length;
     }
-  }
 
-  var activePopupField = null;
-  var activePopupMaxChars = 280;
-  var popupFieldLabels = {
-    'comment': 'Comment',
-    'working_time_change': 'Change in working time',
-    'other_changes': 'Other changes'
-  };
+    function handlePopupContentInput(textarea) {
+      var max = parseInt(textarea.dataset.maxwords || '40');
+      var val = textarea.value;
+      var words = val.trim().split(/\s+/).filter(function (w) { return w.length > 0; });
+      var count = (words.length === 1 && words[0] === "") ? 0 : words.length;
+      var display = document.getElementById('popupWordCountDisplay');
 
-  function openPopup(fieldId, maxChars) {
-    activePopupField = fieldId;
-    activePopupMaxChars = maxChars || 280;
-    var parts = fieldId.split('_');
-    var rowNum = parseInt(parts.pop()) + 1;
-    var fieldKey = parts.join('_');
-    var label = popupFieldLabels[fieldKey] || fieldKey;
-    document.getElementById('popupHeader').textContent = 'Edit ' + label + ' (#' + rowNum + ')';
-    var title = document.getElementById('hiddenTitle_' + fieldId).value;
-    var content = document.getElementById('hiddenContent_' + fieldId).value;
-    document.getElementById('popupTitleInput').value = title;
-    document.getElementById('popupContentInput').value = content;
-    document.getElementById('popupContentInput').dataset.maxchars = activePopupMaxChars;
-    document.getElementById('popupCharLimit').textContent = '(max ' + activePopupMaxChars + ' chars)';
-    document.getElementById('popupBackdrop').style.display = 'flex';
-    setTimeout(function() { document.getElementById('popupTitleInput').focus(); }, 150);
-  }
-
-  function closePopup() {
-    document.getElementById('popupBackdrop').style.display = 'none';
-    activePopupField = null;
-  }
-
-  function savePopup() {
-    var title = document.getElementById('popupTitleInput').value.trim();
-    var content = document.getElementById('popupContentInput').value.trim();
-    if (content.length > activePopupMaxChars) {
-      content = content.slice(0, activePopupMaxChars);
-    }
-    document.getElementById('hiddenTitle_' + activePopupField).value = title;
-    document.getElementById('hiddenContent_' + activePopupField).value = content;
-    var titleEl = document.getElementById('popupTitle_' + activePopupField);
-    if (titleEl) {
-      titleEl.textContent = title || '—';
-      var triggerEl = titleEl.parentElement;
-      if (triggerEl) {
-        triggerEl.setAttribute('data-def', content ? (title + '\n\n' + content) : (title || '—'));
+      if (count > max) {
+        var truncated = words.slice(0, max).join(' ');
+        textarea.value = truncated;
+        count = max;
+        if (display) {
+          display.textContent = max + ' / ' + max + ' words (limit reached)';
+          display.style.color = '#c00';
+        }
+      } else {
+        if (display) {
+          display.textContent = count + ' / ' + max + ' words';
+          display.style.color = count >= Math.floor(max * 0.9) ? '#d97706' : '#666';
+        }
       }
     }
-    closePopup();
-  }
 
-  document.getElementById('popupBackdrop').addEventListener('click', function(e) {
-    if (e.target === this) closePopup();
-  });
+    var activePopupField = null;
+    var activePopupMaxWords = 40;
+    var popupFieldLabels = {
+      'comment': 'Comments',
+      'other_changes': 'Other aspects',
+      'outcome_reporting': 'Qualitative reporting'
+    };
 
-  function toggleOrgMenu() { document.getElementById('orgMenu').classList.toggle('show'); }
-  document.addEventListener('click', function(e) {
-    var dd = document.getElementById('orgDropdown');
-    if (dd && !dd.contains(e.target)) document.getElementById('orgMenu').classList.remove('show');
-  });
+    function openPopup(fieldId, maxWords) {
+      activePopupField = fieldId;
+      activePopupMaxWords = maxWords || 40;
+      var parts = fieldId.split('_');
+      var rowNum = parseInt(parts.pop()) + 1;
+      var fieldKey = parts.join('_');
+      var label = popupFieldLabels[fieldKey] || fieldKey;
+      document.getElementById('popupHeader').textContent = 'Edit ' + label + (isNaN(rowNum) ? '' : ' (#' + rowNum + ')');
+      var titleEl = document.getElementById('hiddenTitle_' + fieldId);
+      var contentEl = document.getElementById('hiddenContent_' + fieldId);
+      var title = titleEl ? titleEl.value : '';
+      var content = contentEl ? contentEl.value : '';
+      document.getElementById('popupTitleInput').value = title;
+      var textarea = document.getElementById('popupContentInput');
+      textarea.value = content;
+      textarea.dataset.maxwords = activePopupMaxWords;
+      handlePopupContentInput(textarea);
+      document.getElementById('popupBackdrop').style.display = 'flex';
+      setTimeout(function () { document.getElementById('popupTitleInput').focus(); }, 150);
+    }
+
+    function closePopup() {
+      document.getElementById('popupBackdrop').style.display = 'none';
+      activePopupField = null;
+    }
+
+    function savePopup() {
+      if (!activePopupField) return;
+      var title = document.getElementById('popupTitleInput').value.trim();
+      var textarea = document.getElementById('popupContentInput');
+      var content = textarea.value.trim();
+      var max = activePopupMaxWords || 40;
+      var words = content.split(/\s+/).filter(function (w) { return w.length > 0; });
+      if (words.length > max) {
+        content = words.slice(0, max).join(' ');
+        words = words.slice(0, max);
+      }
+      var count = (words.length === 1 && words[0] === "") ? 0 : words.length;
+
+      var titleEl = document.getElementById('hiddenTitle_' + activePopupField);
+      var contentEl = document.getElementById('hiddenContent_' + activePopupField);
+      if (titleEl) titleEl.value = title;
+      if (contentEl) contentEl.value = content;
+
+      var displayEl = document.getElementById('popupTitle_' + activePopupField);
+      var btnEl = document.getElementById('popupBtn_' + activePopupField) || (displayEl ? displayEl.closest('.report-btn') : null);
+      if (displayEl) {
+        if (title) {
+          var shortTitle = title.length > 20 ? (title.substring(0, 20) + '…') : title;
+          displayEl.textContent = shortTitle;
+        } else if (count > 0) {
+          displayEl.innerHTML = '<strong>' + count + '</strong> word' + (count !== 1 ? 's' : '');
+        } else {
+          displayEl.innerHTML = '<span style="opacity:0.75;">no input</span>';
+        }
+      }
+      if (btnEl) {
+        var tooltip = content ? (title ? (title + '\n\n' + content) : content) : title;
+        if (tooltip) {
+          btnEl.setAttribute('data-def', tooltip);
+        } else {
+          btnEl.removeAttribute('data-def');
+        }
+      }
+      closePopup();
+    }
+
+    document.getElementById('popupBackdrop').addEventListener('click', function (e) {
+      if (e.target === this) closePopup();
+    });
+
+    function toggleOrgMenu() { document.getElementById('orgMenu').classList.toggle('show'); }
+    document.addEventListener('click', function (e) {
+      var dd = document.getElementById('orgDropdown');
+      if (dd && !dd.contains(e.target)) document.getElementById('orgMenu').classList.remove('show');
+    });
+
+    function validatePercentInput(el) {
+      if (!el) return;
+      var v = el.value.replace(/,/g, '.').replace(/[^\d.-]/g, '');
+      var isNeg = v.startsWith('-');
+      v = v.replace(/-/g, '');
+      if (isNeg) v = '-' + v;
+      var parts = v.split('.');
+      if (parts.length > 2) {
+        v = parts[0] + '.' + parts.slice(1).join('');
+      }
+      parts = v.split('.');
+      if (parts.length === 2 && parts[1].length > 2) {
+        parts[1] = parts[1].substring(0, 2);
+        v = parts[0] + '.' + parts[1];
+      }
+      el.value = v;
+    }
+
+    function validateIntegerInput(el) {
+      if (!el) return;
+      el.value = el.value.replace(/\D/g, '');
+    }
   </script>
 </body>
+
 </html>

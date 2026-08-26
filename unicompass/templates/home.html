@@ -1,0 +1,85 @@
+{% extends "layout.html" %}
+{% block title %}— Home{% endblock %}
+{% block content %}
+<div class="page-intro">
+  <p>
+    Welcome to UNI Compass. This is an instrument to track collective bargaining in your sector. UNI Europa
+    will aggregate inputs annually to monitor evolutions across Europe for its affiliated unions.
+  </p>
+  <p>
+    Complete the tables for each of the three sections: annual results, major agreements and major
+    companies. Should measurements differ from the given definition, please specify the methodology in the
+    corresponding comment box in the table. For instance:
+  </p>
+  <ul>
+    <li>median levels (average worker), instead of arithmetic mean (average value)</li>
+    <li>year-over-year change, instead of month-over-month change from December to December</li>
+  </ul>
+</div>
+
+{% if progress_years %}
+<div style="background:#fff; border:1px solid #ddd; border-radius:6px; padding:0.8rem; overflow-x:auto;">
+  <div style="font-weight:600; margin-bottom:0.6rem; font-size:0.95rem; color:#1a3a5c;">Input progress</div>
+  <table style="border-collapse:collapse; width:100%; font-size:0.85rem;">
+    <thead>
+      <tr>
+        <th style="text-align:left; padding:0.4rem 0.6rem; border-bottom:2px solid #1a3a5c; color:#1a3a5c;">Year</th>
+        <th style="text-align:center; padding:0.4rem 0.6rem; border-bottom:2px solid #1a3a5c;">
+          <a href="{{ url_for('annual_results') }}"
+            style="color:#1a3a5c; text-decoration:underline; font-weight:600;">Annual results</a>
+        </th>
+        <th style="text-align:center; padding:0.4rem 0.6rem; border-bottom:2px solid #1a3a5c;">
+          <a href="{{ url_for('agreements') }}" style="color:#1a3a5c; text-decoration:underline; font-weight:600;">Major
+            agreements</a>
+        </th>
+        <th style="text-align:center; padding:0.4rem 0.6rem; border-bottom:2px solid #1a3a5c;">
+          <a href="{{ url_for('companies') }}" style="color:#1a3a5c; text-decoration:underline; font-weight:600;">Major
+            companies</a>
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for y in progress_years|sort(reverse=true) %}
+      {% set p = progress_years[y] %}
+      <tr>
+        <td style="padding:0.6rem 0.6rem; border-bottom:1px solid #eee; font-weight:600; color:#1a3a5c;">{{ y }}</td>
+        
+        <!-- Annual results (10 steps) -->
+        <td style="padding:0.6rem 0.6rem; border-bottom:1px solid #eee; text-align:center;">
+          {% set s_ann = [p.annual_filled, 10]|min %}
+          {% set c_ann = '#dc2626' if s_ann <= 3 else ('#f59e0b' if s_ann <= 6 else '#16a34a') %}
+          <div style="display:flex; gap:3px; width:110px; margin:0 auto; justify-content:center;" title="{{ p.annual_filled }} completed">
+            {% for i in range(1, 11) %}
+            <div style="flex:1; height:8px; border-radius:2px; background:{% if i <= s_ann %}{{ c_ann }}{% else %}#e5e7eb{% endif %};"></div>
+            {% endfor %}
+          </div>
+        </td>
+
+        <!-- Major agreements (10 steps) -->
+        <td style="padding:0.6rem 0.6rem; border-bottom:1px solid #eee; text-align:center;">
+          {% set s_ag = [p.ag_filled, 10]|min %}
+          {% set c_ag = '#dc2626' if s_ag <= 3 else ('#f59e0b' if s_ag <= 6 else '#16a34a') %}
+          <div style="display:flex; gap:3px; width:110px; margin:0 auto; justify-content:center;" title="{{ p.ag_filled }} completed">
+            {% for i in range(1, 11) %}
+            <div style="flex:1; height:8px; border-radius:2px; background:{% if i <= s_ag %}{{ c_ag }}{% else %}#e5e7eb{% endif %};"></div>
+            {% endfor %}
+          </div>
+        </td>
+
+        <!-- Major companies (10 steps) -->
+        <td style="padding:0.6rem 0.6rem; border-bottom:1px solid #eee; text-align:center;">
+          {% set s_co = [p.co_filled, 10]|min %}
+          {% set c_co = '#dc2626' if s_co <= 3 else ('#f59e0b' if s_co <= 6 else '#16a34a') %}
+          <div style="display:flex; gap:3px; width:110px; margin:0 auto; justify-content:center;" title="{{ p.co_filled }} completed">
+            {% for i in range(1, 11) %}
+            <div style="flex:1; height:8px; border-radius:2px; background:{% if i <= s_co %}{{ c_co }}{% else %}#e5e7eb{% endif %};"></div>
+            {% endfor %}
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}

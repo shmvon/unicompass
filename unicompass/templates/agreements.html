@@ -1,22 +1,22 @@
 {% extends "layout.html" %}
 {% block title %}— Major Agreements{% endblock %}
 {% block content %}
-{% if view_org and view_org != session_org %}<p style="margin-bottom:0.5rem; font-size:0.9rem; color:#d63384;">Viewing:
-  <strong>{{ view_org }}</strong>
-</p>{% endif %}
-<p style="color:#555; margin-bottom:1rem;">Data from the most important agreements — up to 10 entries, auto-sorted by
-  workers affected.</p>
-<p style="color:#2b6cb0; margin-bottom:1rem; font-size:0.85rem; font-style:italic;">
-  Note: If your measurement/calculation for any variable differs from the standard definition, please specify how it is
-  measured in the corresponding comment box.
-</p>
+{% if view_org and view_org != session_org %}
+<p class="viewing-banner">Viewing: <strong>{{ view_org }}</strong></p>
+{% endif %}
+
+<div class="page-intro">
+  <p>Provide data from the most important agreements your organisation has concluded within this sector. Add up to 10
+    entries with a reference to the name of the companies involved or the sectoral branch. Entries are auto-sorted by
+    workers affected.</p>
+</div>
+
 <form method="POST">
   {% if view_org %}<input type="hidden" name="org" value="{{ view_org }}">{% endif %}
-  <div style="margin-bottom:1rem;">
-    <label for="year" style="font-weight:600; margin-right:0.5rem;">Year:</label>
-    <select name="year" id="year" onchange="this.form.submit()"
-      style="padding:0.35rem; border:1px solid #ccc; border-radius:3px;">
-      {% for y in years %}
+  <div class="filter-bar">
+    <label for="year">Year:</label>
+    <select name="year" id="year" onchange="this.form.submit()">
+      {% for y in years|sort(reverse=true) %}
       <option value="{{ y }}" {% if y==selected_year %}selected{% endif %}>{{ y }}</option>
       {% endfor %}
     </select>
@@ -29,63 +29,68 @@
       <colgroup>
         <col style="width:3rem; min-width:3rem;">
         <col style="width:12rem; min-width:12rem;">
-        <col style="min-width:80px;">
+        <col style="min-width:90px;">
         <col style="min-width:90px;">
         <col style="min-width:80px;">
         <col style="min-width:80px;">
         <col style="min-width:80px;">
         <col style="min-width:80px;">
-        <col style="min-width:210px;">
-        <col style="min-width:210px;">
-        <col style="min-width:210px;">
+        <col style="min-width:150px;">
+        <col style="min-width:150px;">
       </colgroup>
       <thead>
         <tr>
           <th class="sticky-col-1" style="text-align:center; border-bottom:2px solid #1a3a5c;">#</th>
-          <th class="sticky-col-2" style="text-align:left; border-bottom:2px solid #1a3a5c;">Company / sector</th>
+          <th class="sticky-col-2" style="text-align:left; border-bottom:2px solid #1a3a5c;">Reference</th>
           <th style="text-align:center; border-bottom:2px solid #1a3a5c;">
-            <span class="var-def" title="Collective bargaining level (multi-employer or single-employer).">Level</span>
+            <span class="var-def"
+              data-def="Collective bargaining level (entire sector, multi-employer or single-employer).">Level</span>
           </th>
           <th style="text-align:center; border-bottom:2px solid #1a3a5c;">
-            <span class="var-def" title="The date when the agreement was concluded (YYYY-MM).">Date of agreement</span>
+            <span class="var-def" data-def="The date when the agreement was concluded (YYYY-MM).">Date</span>
           </th>
           <th style="text-align:center; border-bottom:2px solid #1a3a5c;">
-            <span class="var-def" title="Duration of the collective agreement.">Duration</span>
+            <span class="var-def" data-def="Duration of the collective agreement.">Duration</span>
           </th>
           <th style="text-align:center; border-bottom:2px solid #1a3a5c;">
-            <span class="var-def" title="Number of workers covered by the agreement.">Workers affected</span>
+            <span class="var-def" data-def="Number of workers covered by the agreement.">Workers</span>
           </th>
           <th style="text-align:center; border-bottom:2px solid #1a3a5c;">
-            <span class="var-def" title="Average collectively agreed wage increase in percentage. In case of multi-year agreements, either the staged increase for that year, or the average annual increase should be reported.">Wage increase</span>
+            <span class="var-def"
+              data-def="Average nominal collectively agreed wage increase for the average worker (percentage). Include the basic gross wage rate and regular extra pay (e.g. shift bonuses). Do not include one-off payments. In case of multi-year agreements, report the staged increase or annual average increase.">Pay
+              increase</span>
           </th>
           <th style="text-align:center; border-bottom:2px solid #1a3a5c;">
-            <span class="var-def" title="The sum of all benefits or bonuses limited to the bargaining period covered.">One-off lump sum</span>
+            <span class="var-def"
+              data-def="Non-permanent benefits paid on top of the increase in pay, e.g. profit sharing, efficiency bonuses, etc. (estimated gross value in euro over the year).">Lump
+              sum</span>
           </th>
           <th style="text-align:center; border-bottom:2px solid #1a3a5c;">
-            <span class="var-def" title="Any change in working hours or working time arrangements. Max 280 characters.">Change in working time</span>
+            <span class="var-def"
+              data-def="Any other relevant aspects of the collective agreement, including working time. Max 40 words.">Other
+              aspects</span>
           </th>
           <th style="text-align:center; border-bottom:2px solid #1a3a5c;">
-            <span class="var-def" title="Other qualitative changes in the collective agreement. Max 280 characters.">Other changes</span>
-          </th>
-          <th style="text-align:center; border-bottom:2px solid #1a3a5c;">
-            <span class="var-def" title="Additional comments. Max 280 characters.">Comment</span>
+            <span class="var-def" data-def="Comments. Max. 20 words.">Comments</span>
           </th>
         </tr>
       </thead>
       <tbody>
         {% for i in range(10) %}
-        {% set row = saved[i] if i < saved|length else {} %}
-        <tr class="agreement-row" {% if i >= initial_rows %}style="display:none;"{% endif %}>
+        {% set row = saved[i] if i < saved|length else {} %} <tr class="agreement-row" {% if i>= initial_rows
+          %}style="display:none;"{% endif %}>
           <td class="sticky-col-1" style="color:#888; text-align:center; border-bottom:1px solid #ddd;">{{ i + 1 }}</td>
           <td class="sticky-col-2" style="border-bottom:1px solid #ddd;">
             <input type="text" name="company_name_{{ i }}" value="{{ row.get('company_name', '') }}"
               style="width:140px; padding:0.25rem; border:1px solid #ccc; border-radius:3px; font-size:0.8rem;"
-              maxlength="200">
+              placeholder="Employer(s) or sector" maxlength="200">
           </td>
           <td style="text-align:center; border-bottom:1px solid #ddd;">
             <select name="level_{{ i }}"
               style="padding:0.25rem; border:1px solid #ccc; border-radius:3px; font-size:0.8rem;">
               <option value="">—</option>
+              <option value="entire sector" {% if row.get('level')=='entire sector' %}selected{% endif %}>Entire sector
+              </option>
               <option value="multi-employer" {% if row.get('level')=='multi-employer' %}selected{% endif %}>
                 Multi-employer</option>
               <option value="single-employer" {% if row.get('level')=='single-employer' %}selected{% endif %}>
@@ -110,69 +115,98 @@
           <td style="text-align:center; border-bottom:1px solid #ddd;">
             <input type="text" name="workers_affected_{{ i }}" value="{{ row.get('workers_affected', '') }}"
               style="width:70px; padding:0.25rem; border:1px solid #ccc; border-radius:3px; text-align:center; font-size:0.8rem;"
-              placeholder="#" maxlength="20">
+              placeholder="#" maxlength="20" oninput="validateIntegerInput(this)">
           </td>
           <td style="text-align:center; border-bottom:1px solid #ddd;">
             <input type="text" name="wage_increase_{{ i }}" value="{{ row.get('wage_increase', '') }}"
               style="width:70px; padding:0.25rem; border:1px solid #ccc; border-radius:3px; text-align:center; font-size:0.8rem;"
-              maxlength="20">
+              placeholder="%" maxlength="20" oninput="validatePercentInput(this)">
           </td>
           <td style="text-align:center; border-bottom:1px solid #ddd;">
             <input type="text" name="one_off_lump_sum_{{ i }}" value="{{ row.get('one_off_lump_sum', '') }}"
               style="width:70px; padding:0.25rem; border:1px solid #ccc; border-radius:3px; text-align:center; font-size:0.8rem;"
-              maxlength="20">
-          </td>
-          {% set _wt_raw = row.get('working_time_change', '') %}
-          {% set _wt_parts = _wt_raw.split('\n', 1) %}
-          {% set _wt_title = _wt_parts[0] %}
-          {% set _wt_content = _wt_parts[1] if _wt_parts|length > 1 else '' %}
-          <td style="text-align:center; border-bottom:1px solid #ddd;">
-            <span class="popup-trigger" onclick="openPopup('working_time_change_{{ i }}', 280)" data-def="{{ (_wt_title + '\n\n' + _wt_content) if _wt_content else (_wt_title or '—') }}">
-              <span class="popup-title" id="popupTitle_working_time_change_{{ i }}">{{ _wt_title or '—' }}</span>
-              <span class="edit-icon">&#9998;</span>
-            </span>
-            <input type="hidden" name="working_time_change_title_{{ i }}" id="hiddenTitle_working_time_change_{{ i }}" value="{{ _wt_title }}">
-            <input type="hidden" name="working_time_change_content_{{ i }}" id="hiddenContent_working_time_change_{{ i }}" value="{{ _wt_content }}">
+              placeholder="€" maxlength="20" oninput="validateIntegerInput(this)">
           </td>
           {% set _oc_raw = row.get('other_changes', '') %}
-          {% set _oc_parts = _oc_raw.split('\n', 1) %}
-          {% set _oc_title = _oc_parts[0] %}
-          {% set _oc_content = _oc_parts[1] if _oc_parts|length > 1 else '' %}
-          <td style="text-align:center; border-bottom:1px solid #ddd;">
-            <span class="popup-trigger" onclick="openPopup('other_changes_{{ i }}', 280)" data-def="{{ (_oc_title + '\n\n' + _oc_content) if _oc_content else (_oc_title or '—') }}">
-              <span class="popup-title" id="popupTitle_other_changes_{{ i }}">{{ _oc_title or '—' }}</span>
-              <span class="edit-icon">&#9998;</span>
-            </span>
-            <input type="hidden" name="other_changes_title_{{ i }}" id="hiddenTitle_other_changes_{{ i }}" value="{{ _oc_title }}">
-            <input type="hidden" name="other_changes_content_{{ i }}" id="hiddenContent_other_changes_{{ i }}" value="{{ _oc_content }}">
+          {% set _oc_parts = _oc_raw.split('\n', 1) if _oc_raw else [] %}
+          {% set _oc_title = _oc_parts[0] if _oc_parts|length > 1 else '' %}
+          {% set _oc_content = _oc_parts[1] if _oc_parts|length > 1 else (_oc_parts[0] if _oc_parts|length == 1 else '')
+          %}
+          {% set _oc_words = _oc_content.strip().split() if _oc_content else [] %}
+          {% set _oc_count = _oc_words|length %}
+          <td style="text-align:center; border-bottom:1px solid #ddd; padding:0.2rem;">
+            <button type="button" class="report-btn active-editing" id="popupBtn_other_changes_{{ i }}"
+              onclick="openPopup('other_changes_{{ i }}', 40)" {% if _oc_raw
+              %}data-def="{{ (_oc_title + '\n\n' + _oc_content) if _oc_title and _oc_content else _oc_raw }}" {% endif
+              %}>
+              <span id="popupTitle_other_changes_{{ i }}">
+                {% if _oc_title %}
+                {{ (_oc_title[:20] ~ '…') if _oc_title|length > 20 else _oc_title }}
+                {% elif _oc_count > 0 %}
+                <strong>{{ _oc_count }}</strong> word{{ 's' if _oc_count != 1 else '' }}
+                {% else %}
+                <span style="color:inherit; opacity:0.75;">no input</span>
+                {% endif %}
+              </span>
+            </button>
+            <input type="hidden" name="other_changes_title_{{ i }}" id="hiddenTitle_other_changes_{{ i }}"
+              value="{{ _oc_title }}">
+            <input type="hidden" name="other_changes_content_{{ i }}" id="hiddenContent_other_changes_{{ i }}"
+              value="{{ _oc_content }}">
           </td>
           {% set _cmt_raw = row.get('comment', '') %}
-          {% set _cmt_parts = _cmt_raw.split('\n', 1) %}
-          {% set _cmt_title = _cmt_parts[0] %}
-          {% set _cmt_content = _cmt_parts[1] if _cmt_parts|length > 1 else '' %}
-          <td style="text-align:center; border-bottom:1px solid #ddd;">
-            <span class="popup-trigger" onclick="openPopup('comment_{{ i }}', 280)" data-def="{{ (_cmt_title + '\n\n' + _cmt_content) if _cmt_content else (_cmt_title or '—') }}">
-              <span class="popup-title" id="popupTitle_comment_{{ i }}">{{ _cmt_title or '—' }}</span>
-              <span class="edit-icon">&#9998;</span>
-            </span>
+          {% set _cmt_parts = _cmt_raw.split('\n', 1) if _cmt_raw else [] %}
+          {% set _cmt_title = _cmt_parts[0] if _cmt_parts|length > 1 else '' %}
+          {% set _cmt_content = _cmt_parts[1] if _cmt_parts|length > 1 else (_cmt_parts[0] if _cmt_parts|length == 1
+          else '') %}
+          {% set _cmt_words = _cmt_content.strip().split() if _cmt_content else [] %}
+          {% set _cmt_count = _cmt_words|length %}
+          <td style="text-align:center; border-bottom:1px solid #ddd; padding:0.2rem;">
+            <button type="button" class="report-btn active-editing" id="popupBtn_comment_{{ i }}"
+              onclick="openPopup('comment_{{ i }}', 20)" {% if _cmt_raw
+              %}data-def="{{ (_cmt_title + '\n\n' + _cmt_content) if _cmt_title and _cmt_content else _cmt_raw }}" {%
+              endif %}>
+              <span id="popupTitle_comment_{{ i }}">
+                {% if _cmt_title %}
+                {{ (_cmt_title[:20] ~ '…') if _cmt_title|length > 20 else _cmt_title }}
+                {% elif _cmt_count > 0 %}
+                <strong>{{ _cmt_count }}</strong> word{{ 's' if _cmt_count != 1 else '' }}
+                {% else %}
+                <span style="color:inherit; opacity:0.75;">no input</span>
+                {% endif %}
+              </span>
+            </button>
             <input type="hidden" name="comment_title_{{ i }}" id="hiddenTitle_comment_{{ i }}" value="{{ _cmt_title }}">
-            <input type="hidden" name="comment_content_{{ i }}" id="hiddenContent_comment_{{ i }}" value="{{ _cmt_content }}">
+            <input type="hidden" name="comment_content_{{ i }}" id="hiddenContent_comment_{{ i }}"
+              value="{{ _cmt_content }}">
           </td>
-        </tr>
-        {% endfor %}
+          </tr>
+          {% endfor %}
       </tbody>
     </table>
   </div>
   <div style="margin-top:0.5rem;">
     <span id="addAgreementRow" class="add-row-btn" onclick="addAgreementRow()">+ Add row</span>
   </div>
-  <div style="margin-top:1rem;">
-    <button type="submit"
-      style="background:#1a3a5c; color:#fff; border:none; padding:0.5rem 1.5rem; border-radius:4px; cursor:pointer;">Save</button>
-    <a href="{{ url_for('dashboard') }}" style="margin-left:1rem; color:#1a3a5c;">Back to dashboard</a>
+  <div class="form-actions">
+    <button type="submit" class="btn-save">Save</button>
   </div>
 </form>
 <script>
+  function validatePercentage(input) {
+    var v = input.value.trim().replace('%', '').trim();
+    if (!v) return;
+    var num = parseFloat(v);
+    if (isNaN(num)) {
+      alert('Please enter a valid numeric percentage between -50.00 and 50.00');
+      input.value = '';
+      return;
+    }
+    if (num < -50.0) num = -50.0;
+    if (num > 50.0) num = 50.0;
+    input.value = num + '%';
+  }
+
   var agreementRowCount = {{ initial_rows }};
   var agreementTotal = 10;
   (function () {

@@ -1,95 +1,104 @@
 {% extends "layout.html" %}
 {% block title %}— Example{% endblock %}
 {% block content %}
-<p style="color:#555; margin-bottom:1rem;">Demonstration of how the tool works with fictional data. No login required.</p>
+<div class="page-intro">
+  <p>Demonstration of the input requested (fictional data). Once you have completed the tables for your organisation and
+    sector, you can download your report on the <a href="{{ url_for('export') }}" style="color:#1a3a5c; text-decoration:underline; font-weight:600;">export page</a>.</p>
+</div>
 
-<h2 style="font-size:1.1rem; margin-bottom:0.5rem;">Annual results</h2>
-<table style="border-collapse:collapse; width:100%; font-size:0.8rem; margin-bottom:1.5rem;">
-  <thead>
-    <tr>
-      <th style="text-align:left; padding:0.3rem 0.5rem; border-bottom:2px solid #1a3a5c;">Variable</th>
-      <th style="text-align:center; padding:0.3rem 0.5rem; border-bottom:2px solid #1a3a5c;">2024</th>
-      <th style="text-align:center; padding:0.3rem 0.5rem; border-bottom:2px solid #1a3a5c;">2025</th>
-      <th style="text-align:center; padding:0.3rem 0.5rem; border-bottom:2px solid #1a3a5c;">2026</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for label, cells in data.annual %}
-    <tr>
-      <td style="padding:0.3rem 0.5rem; border-bottom:1px solid #ddd;">{{ label }}</td>
-      {% for year, val in cells %}
-      <td style="padding:0.3rem 0.5rem; border-bottom:1px solid #ddd; text-align:center;">{{ val }}</td>
+<h2 style="font-size:1.05rem; color:#1a3a5c; margin-top:1.2rem; margin-bottom:0.5rem;">Annual results</h2>
+<div class="table-wrap" style="margin-bottom:1.5rem;">
+  <table style="border-collapse:collapse; width:100%; font-size:0.82rem;">
+    <thead>
+      <tr>
+        <th style="text-align:left; padding:0.35rem 0.5rem; border-bottom:2px solid #1a3a5c;">Variable</th>
+        <th style="text-align:center; padding:0.35rem 0.5rem; border-bottom:2px solid #1a3a5c;">2024</th>
+        <th style="text-align:center; padding:0.35rem 0.5rem; border-bottom:2px solid #1a3a5c;">2025</th>
+        <th style="text-align:center; padding:0.35rem 0.5rem; border-bottom:2px solid #1a3a5c;">2026</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for label, cells in data.annual %}
+      <tr>
+        <td style="padding:0.35rem 0.5rem; border-bottom:1px solid #ddd; font-weight:500;">{{ label }}</td>
+        {% for year, val in cells %}
+        <td style="padding:0.35rem 0.5rem; border-bottom:1px solid #ddd; text-align:center;">{{ val }}</td>
+        {% endfor %}
+      </tr>
       {% endfor %}
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
+    </tbody>
+  </table>
+</div>
 
-<h2 style="font-size:1.1rem; margin-bottom:0.5rem;">Major agreements in 2026</h2>
-<table style="border-collapse:collapse; width:100%; font-size:0.8rem; margin-bottom:1.5rem;">
-  <thead>
-    <tr>
-      <th style="text-align:left; padding:0.3rem 0.5rem; border-bottom:2px solid #1a3a5c;">Company / Sector</th>
-      <th style="text-align:center; padding:0.3rem 0.5rem; border-bottom:2px solid #1a3a5c;">Level</th>
-      <th style="text-align:center; padding:0.3rem 0.5rem; border-bottom:2px solid #1a3a5c;">Date</th>
-      <th style="text-align:center; padding:0.3rem 0.5rem; border-bottom:2px solid #1a3a5c;">Duration</th>
-      <th style="text-align:center; padding:0.3rem 0.5rem; border-bottom:2px solid #1a3a5c;">Workers affected</th>
-      <th style="text-align:center; padding:0.3rem 0.5rem; border-bottom:2px solid #1a3a5c;">Wage increase</th>
-      <th style="text-align:center; padding:0.3rem 0.5rem; border-bottom:2px solid #1a3a5c;">One-off lump sum</th>
-      <th style="text-align:center; padding:0.3rem 0.5rem; border-bottom:2px solid #1a3a5c;">Change in working time</th>
-      <th style="text-align:center; padding:0.3rem 0.5rem; border-bottom:2px solid #1a3a5c;">Other changes</th>
-      <th style="text-align:center; padding:0.3rem 0.5rem; border-bottom:2px solid #1a3a5c;">Comment</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for name, level, date, duration, workers, wage, lump_sum, working_time, other_changes, comment in data.agreements %}
-    <tr>
-      <td style="padding:0.3rem 0.5rem; border-bottom:1px solid #ddd;">{{ name }}</td>
-      <td style="padding:0.3rem 0.5rem; border-bottom:1px solid #ddd; text-align:center;">{{ level }}</td>
-      <td style="padding:0.3rem 0.5rem; border-bottom:1px solid #ddd; text-align:center;">{{ date }}</td>
-      <td style="padding:0.3rem 0.5rem; border-bottom:1px solid #ddd; text-align:center;">{{ duration }}</td>
-      <td style="padding:0.3rem 0.5rem; border-bottom:1px solid #ddd; text-align:center;">{{ workers }}</td>
-      <td style="padding:0.3rem 0.5rem; border-bottom:1px solid #ddd; text-align:center;">{{ wage }}</td>
-      <td style="padding:0.3rem 0.5rem; border-bottom:1px solid #ddd; text-align:center;">{{ lump_sum }}</td>
-      <td style="padding:0.3rem 0.5rem; border-bottom:1px solid #ddd; text-align:center;">{{ working_time }}</td>
-      <td style="padding:0.3rem 0.5rem; border-bottom:1px solid #ddd; text-align:center;">{{ other_changes }}</td>
-      <td style="padding:0.3rem 0.5rem; border-bottom:1px solid #ddd; text-align:center;">{{ comment }}</td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
+<h2 style="font-size:1.05rem; color:#1a3a5c; margin-top:1.2rem; margin-bottom:0.5rem;">Major agreements in 2026</h2>
+<div class="table-wrap" style="margin-bottom:1.5rem;">
+  <table style="border-collapse:collapse; width:100%; font-size:0.82rem;">
+    <thead>
+      <tr>
+        <th style="text-align:center; padding:0.35rem 0.5rem; border-bottom:2px solid #1a3a5c;">#</th>
+        <th style="text-align:left; padding:0.35rem 0.5rem; border-bottom:2px solid #1a3a5c;">Reference</th>
+        <th style="text-align:center; padding:0.35rem 0.5rem; border-bottom:2px solid #1a3a5c;">Level</th>
+        <th style="text-align:center; padding:0.35rem 0.5rem; border-bottom:2px solid #1a3a5c;">Date</th>
+        <th style="text-align:center; padding:0.35rem 0.5rem; border-bottom:2px solid #1a3a5c;">Duration</th>
+        <th style="text-align:center; padding:0.35rem 0.5rem; border-bottom:2px solid #1a3a5c;">Workers</th>
+        <th style="text-align:center; padding:0.35rem 0.5rem; border-bottom:2px solid #1a3a5c;">Pay increase</th>
+        <th style="text-align:center; padding:0.35rem 0.5rem; border-bottom:2px solid #1a3a5c;">Lump sum</th>
+        <th style="text-align:center; padding:0.35rem 0.5rem; border-bottom:2px solid #1a3a5c;">Other aspects</th>
+        <th style="text-align:center; padding:0.35rem 0.5rem; border-bottom:2px solid #1a3a5c;">Comments</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for name, level, date, duration, workers, wage, lump_sum, other_changes, comment in data.agreements %}
+      <tr>
+        <td style="padding:0.35rem 0.5rem; border-bottom:1px solid #ddd; text-align:center; color:#888;">{{ loop.index }}</td>
+        <td style="padding:0.35rem 0.5rem; border-bottom:1px solid #ddd; font-weight:500;">{{ name }}</td>
+        <td style="padding:0.35rem 0.5rem; border-bottom:1px solid #ddd; text-align:center;">{{ level }}</td>
+        <td style="padding:0.35rem 0.5rem; border-bottom:1px solid #ddd; text-align:center;">{{ date }}</td>
+        <td style="padding:0.35rem 0.5rem; border-bottom:1px solid #ddd; text-align:center;">{{ duration }}</td>
+        <td style="padding:0.35rem 0.5rem; border-bottom:1px solid #ddd; text-align:center;">{{ workers }}</td>
+        <td style="padding:0.35rem 0.5rem; border-bottom:1px solid #ddd; text-align:center;">{{ wage }}</td>
+        <td style="padding:0.35rem 0.5rem; border-bottom:1px solid #ddd; text-align:center;">{{ lump_sum }}</td>
+        <td style="padding:0.35rem 0.5rem; border-bottom:1px solid #ddd; text-align:center;">{{ other_changes }}</td>
+        <td style="padding:0.35rem 0.5rem; border-bottom:1px solid #ddd; text-align:center;">{{ comment }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
 
-<h2 style="font-size:1.1rem; margin-bottom:0.5rem;">Major companies in 2026</h2>
-<table style="border-collapse:collapse; width:100%; font-size:0.8rem; margin-bottom:1.5rem;">
-  <thead>
-    <tr>
-      <th style="text-align:left; padding:0.3rem 0.5rem; border-bottom:2px solid #1a3a5c;">Company name</th>
-      <th style="text-align:center; padding:0.3rem 0.5rem; border-bottom:2px solid #1a3a5c;">MNC</th>
-      <th style="text-align:center; padding:0.3rem 0.5rem; border-bottom:2px solid #1a3a5c;">Collective agreement</th>
-      <th style="text-align:center; padding:0.3rem 0.5rem; border-bottom:2px solid #1a3a5c;">Workers</th>
-      <th style="text-align:center; padding:0.3rem 0.5rem; border-bottom:2px solid #1a3a5c;">Number of unions</th>
-      <th style="text-align:center; padding:0.3rem 0.5rem; border-bottom:2px solid #1a3a5c;">
-        <span class="var-def" title="Share of workers of all national establishments that are a member of any trade union.">Union density</span>
-      </th>
-      <th style="text-align:center; padding:0.3rem 0.5rem; border-bottom:2px solid #1a3a5c;">Worker representation body</th>
-      <th style="text-align:center; padding:0.3rem 0.5rem; border-bottom:2px solid #1a3a5c;">EWC</th>
-      <th style="text-align:center; padding:0.3rem 0.5rem; border-bottom:2px solid #1a3a5c;">Comment</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for name, mnc, agreement, workers, unions, union_density, worker_rep, ewc, comment in data.companies %}
-    <tr>
-      <td style="padding:0.3rem 0.5rem; border-bottom:1px solid #ddd;">{{ name }}</td>
-      <td style="padding:0.3rem 0.5rem; border-bottom:1px solid #ddd; text-align:center;">{{ mnc }}</td>
-      <td style="padding:0.3rem 0.5rem; border-bottom:1px solid #ddd; text-align:center;">{{ agreement }}</td>
-      <td style="padding:0.3rem 0.5rem; border-bottom:1px solid #ddd; text-align:center;">{{ workers }}</td>
-      <td style="padding:0.3rem 0.5rem; border-bottom:1px solid #ddd; text-align:center;">{{ unions }}</td>
-      <td style="padding:0.3rem 0.5rem; border-bottom:1px solid #ddd; text-align:center;">{{ union_density }}</td>
-      <td style="padding:0.3rem 0.5rem; border-bottom:1px solid #ddd; text-align:center;">{{ worker_rep }}</td>
-      <td style="padding:0.3rem 0.5rem; border-bottom:1px solid #ddd; text-align:center;">{{ ewc }}</td>
-      <td style="padding:0.3rem 0.5rem; border-bottom:1px solid #ddd; text-align:center;">{{ comment }}</td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
+<h2 style="font-size:1.05rem; color:#1a3a5c; margin-top:1.2rem; margin-bottom:0.5rem;">Major companies in 2026</h2>
+<div class="table-wrap" style="margin-bottom:1.5rem;">
+  <table style="border-collapse:collapse; width:100%; font-size:0.82rem;">
+    <thead>
+      <tr>
+        <th style="text-align:center; padding:0.35rem 0.5rem; border-bottom:2px solid #1a3a5c;">#</th>
+        <th style="text-align:left; padding:0.35rem 0.5rem; border-bottom:2px solid #1a3a5c;">Company name</th>
+        <th style="text-align:center; padding:0.35rem 0.5rem; border-bottom:2px solid #1a3a5c;">Workers</th>
+        <th style="text-align:center; padding:0.35rem 0.5rem; border-bottom:2px solid #1a3a5c;">MNC</th>
+        <th style="text-align:center; padding:0.35rem 0.5rem; border-bottom:2px solid #1a3a5c;">CLA</th>
+        <th style="text-align:center; padding:0.35rem 0.5rem; border-bottom:2px solid #1a3a5c;">Unions</th>
+        <th style="text-align:center; padding:0.35rem 0.5rem; border-bottom:2px solid #1a3a5c;">Union density</th>
+        <th style="text-align:center; padding:0.35rem 0.5rem; border-bottom:2px solid #1a3a5c;">Representation</th>
+        <th style="text-align:center; padding:0.35rem 0.5rem; border-bottom:2px solid #1a3a5c;">EWC</th>
+        <th style="text-align:center; padding:0.35rem 0.5rem; border-bottom:2px solid #1a3a5c;">Comments</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for name, workers, mnc, agreement, unions, union_density, worker_rep, ewc, comment in data.companies %}
+      <tr>
+        <td style="padding:0.35rem 0.5rem; border-bottom:1px solid #ddd; text-align:center; color:#888;">{{ loop.index }}</td>
+        <td style="padding:0.35rem 0.5rem; border-bottom:1px solid #ddd; font-weight:500;">{{ name }}</td>
+        <td style="padding:0.35rem 0.5rem; border-bottom:1px solid #ddd; text-align:center;">{{ workers }}</td>
+        <td style="padding:0.35rem 0.5rem; border-bottom:1px solid #ddd; text-align:center;">{{ mnc }}</td>
+        <td style="padding:0.35rem 0.5rem; border-bottom:1px solid #ddd; text-align:center;">{{ agreement }}</td>
+        <td style="padding:0.35rem 0.5rem; border-bottom:1px solid #ddd; text-align:center;">{{ unions }}</td>
+        <td style="padding:0.35rem 0.5rem; border-bottom:1px solid #ddd; text-align:center;">{{ union_density }}</td>
+        <td style="padding:0.35rem 0.5rem; border-bottom:1px solid #ddd; text-align:center;">{{ worker_rep }}</td>
+        <td style="padding:0.35rem 0.5rem; border-bottom:1px solid #ddd; text-align:center;">{{ ewc }}</td>
+        <td style="padding:0.35rem 0.5rem; border-bottom:1px solid #ddd; text-align:center;">{{ comment }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
 {% endblock %}
