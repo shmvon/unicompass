@@ -1,0 +1,21 @@
+{% extends "layout.html" %}
+{% block title %}— Login{% endblock %}
+{% block content %}
+<h1>Login</h1>
+<form method="POST" style="max-width: 360px;">
+  <div style="margin-bottom: 0.75rem;">
+    <label for="email" style="display:block; margin-bottom:0.25rem; font-size:0.9rem;">Username</label>
+    <input type="text" name="email" id="email" required
+           style="width:100%; padding:0.5rem; border:1px solid #ccc; border-radius:4px;">
+  </div>
+  <div style="margin-bottom: 1rem;">
+    <label for="pincode" style="display:block; margin-bottom:0.25rem; font-size:0.9rem;">Pincode</label>
+    <input type="password" name="pincode" id="pincode" required
+           style="width:100%; padding:0.5rem; border:1px solid #ccc; border-radius:4px;">
+  </div>
+  <button type="submit"
+          style="background:#1a3a5c; color:#fff; border:none; padding:0.5rem 1.5rem; border-radius:4px; cursor:pointer;">
+    Sign in
+  </button>
+</form>
+{% endblock %}

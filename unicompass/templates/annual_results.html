@@ -1,0 +1,292 @@
+{% extends "layout.html" %}
+{% block title %}— Annual Results{% endblock %}
+{% block content %}
+{% if view_org and view_org != session_org %}<p style="margin-bottom:0.5rem; font-size:0.9rem; color:#d63384;">Viewing: <strong>{{ view_org }}</strong></p>{% endif %}
+<p style="color:#555; margin-bottom:1rem;">
+  Aggregate data per year. Click <strong>detail</strong> or <strong>approx</strong> to toggle rows.
+  Flip the switch next to a year to open/close its comment column.
+  Blue = low, red = high.
+</p>
+<p style="color:#2b6cb0; margin-bottom:1rem; font-size:0.85rem; font-style:italic;">
+  Note: If your measurement/calculation for any variable differs from the standard definition, please specify how it is measured in the corresponding comment box.
+</p>
+<form method="POST">
+  {% if view_org %}<input type="hidden" name="org" value="{{ view_org }}">{% endif %}
+  {% set latest_year = years[-1] %}
+  {% set default_open = latest_year %}
+  <div class="table-wrap"><table style="border-collapse:collapse; width:100%; font-size:0.85rem; border:none;">
+    <colgroup>
+      <col style="white-space:nowrap; width:1%;">
+      {% for y in years %}
+      <col style="width:80px; min-width:80px;">
+      <col id="cmtCol{{ y }}" style="{% if y != default_open %}width:0;min-width:0;{% else %}width:150px;min-width:150px;{% endif %}">
+      {% endfor %}
+    </colgroup>
+    <thead>
+      <tr>
+        <th style="text-align:left; padding:0.4rem 0.6rem; border-bottom:2px solid #1a3a5c; white-space:nowrap;">Variable</th>
+        {% for y in years %}
+          <th id="yearHead{{ y }}" style="text-align:center; padding:0.3rem 0.3rem; border-bottom:2px solid #1a3a5c;{% if not loop.first %} border-left:2px solid #e8e8e8;{% endif %}" colspan="2">
+            <span style="display:flex; align-items:center; justify-content:center; gap:4px;">
+              <span>{{ y }}</span>
+              <label class="switch-toggle" title="Toggle comment column">
+                <input type="checkbox" id="yearSwitch{{ y }}" {% if y == default_open %}checked{% endif %} onchange="toggleYear({{ y }})">
+                <span class="switch-slider"></span>
+              </label>
+            </span>
+          </th>
+        {% endfor %}
+      </tr>
+      <tr id="subheaders">
+        <th style="text-align:left; padding:0.2rem 0.6rem;"></th>
+        {% for y in years %}
+          <th style="text-align:center; padding:0.2rem 0.3rem; font-weight:normal; color:#666; font-size:0.75rem;{% if not loop.first %} border-left:2px solid #e8e8e8;{% endif %}">Input</th>
+          <th id="cmtHead{{ y }}" style="text-align:center; padding:0.2rem 0.3rem; font-weight:normal; color:#666; font-size:0.75rem;">Comment</th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% set qual_words = [
+        '100%', 'very high', 'high', 'average', 'low', 'very low', '0%',
+        'strong increase', 'minor increase', 'stable', 'minor decrease', 'strong decrease',
+        'very difficult', 'difficult', 'neutral', 'favourable', 'very favourable'
+      ] %}
+      {% set forced_qual = ['bargaining_climate'] %}
+      {% for var_key, var_label, var_type in variables %}
+      {% set row_mode = row_modes.get(var_key, 'num') %}
+      {% set is_forced_qual = var_key in forced_qual %}
+      {% set var_def = "" %}
+      {% if var_key == "bargaining_climate" %}{% set var_def = "Bargaining climate in the sector." %}
+      {% elif var_key == "collective_bargaining_coverage" %}{% set var_def = "Number of workers covered by a substantial wage agreement." %}
+      {% elif var_key == "avg_wage_increase" %}{% set var_def = "Average collectively agreed wage increase in percentage. In case of multi-year agreements, either the staged increase for that year, or the average annual increase should be reported." %}
+      {% elif var_key == "one_off_lump_sum" %}{% set var_def = "The sum of all benefits or bonuses limited to the bargaining period covered." %}
+      {% elif var_key == "multi_employer_agreements" %}{% set var_def = "Number of multi-employer collective agreements." %}
+      {% elif var_key == "single_employer_agreements" %}{% set var_def = "Number of single-employer collective agreements." %}
+      {% elif var_key == "avg_monthly_wage" %}{% set var_def = "Average full-time monthly wage." %}
+      {% elif var_key == "inflation_rate" %}{% set var_def = "Change in the Consumer Price Index (CPI) between December and December of the previous year, in percentage (to be commented if differently measured)." %}
+      {% elif var_key == "sectoral_productivity" %}{% set var_def = "Change in sectoral productivity between December and December of the previous year, in percentage (to be commented if differently measured)." %}
+      {% elif var_key == "outcome_reporting" %}{% set var_def = "Report on collective bargaining outcomes for this year." %}
+      {% endif %}
+      <tr data-var="{{ var_key }}" {% if var_type == 'report' %}style="vertical-align:top;"{% endif %}>
+        <td style="padding:0.3rem 0.6rem; border-bottom:1px solid #ddd; white-space:nowrap; vertical-align:middle;">
+          {% if var_type != 'climate' and var_type != 'report' %}
+          <button type="button" class="row-toggle"
+                  onclick="toggleRow(this)"
+                  title="Toggle number / qualitative for this row"
+                  style="font-size:0.6rem; padding:1px 5px; margin-right:4px; cursor:pointer; border:1px solid #bbb; border-radius:2px; background:#eee; line-height:1.3; vertical-align:middle;">
+            {{ 'approx' if row_mode == 'qual' else 'detail' }}
+          </button>
+          <input type="hidden" name="row_mode_{{ var_key }}" id="rowMode_{{ var_key }}" value="{{ row_mode }}">
+          {% endif %}
+          <span class="var-def" title="{{ var_def }}">{{ var_label }}</span>
+        </td>
+        {% for y in years %}
+          {% set key = (var_key, y) %}
+          {% set cell = saved.get(key, {}) %}
+          {% set val = cell.get('value', '') %}
+          {% set qual = cell.get('qual_value', '') %}
+          {% set cmt = cell.get('comment', '') %}
+          {% set bg = colormap.get(key, '') %}
+          {% set disabled_attr = 'disabled' if y != default_open else '' %}
+          {% if var_type == 'report' %}
+            <td id="reportCell_{{ y }}" colspan="2" style="padding:0.2rem; border-bottom:1px solid #ddd; text-align:center; vertical-align:middle;{% if not loop.first %} border-left:2px solid #e8e8e8;{% endif %}"
+                {% if y != default_open and cmt %}data-cmt="{{ cmt }}"{% endif %}>
+              <span id="reportIndicator_{{ y }}" class="badge"
+                    style="background:#1a3a5c; color:#fff; padding:0.25rem 0.5rem; border-radius:3px; font-size:0.75rem; cursor:help; {% if y == default_open %}display:none;{% endif %}"
+                    {% if cmt %}data-cmt="{{ cmt }}"{% endif %}>
+                {% if cmt %}
+                  {% set chars = cmt|length %}
+                  {{ chars }} chars
+                {% else %}
+                  no input
+                {% endif %}
+              </span>
+              <textarea name="comment_{{ var_key }}_{{ y }}" rows="3" class="row-{{ var_key }}"
+                        {{ disabled_attr }}
+                        oninput="checkCharLimit(this)"
+                        placeholder="Type report here (max 280 chars)..."
+                        style="width:100%; resize:vertical; padding:0.25rem; border:1px solid #ccc; border-radius:3px; font-size:0.8rem; {% if y != default_open %}display:none;{% endif %}">{{ cmt }}</textarea>
+            </td>
+          {% else %}
+            <td style="padding:0.2rem; border-bottom:1px solid #ddd; text-align:center; vertical-align:middle;{% if not loop.first %} border-left:2px solid #e8e8e8;{% endif %}"
+                {% if var_type != 'report' and y != default_open and cmt %}data-cmt="{{ cmt }}"{% endif %}>
+              {% if var_type == 'climate' %}
+                <select name="qual_{{ var_key }}_{{ y }}"
+                        class="cell-qual row-{{ var_key }}"
+                        {{ disabled_attr }}
+                        style="width:60px; padding:0.2rem; border:1px solid #ccc; border-radius:3px; font-size:0.75rem; text-align:center; {{ bg }}">
+                  <option value="">—</option>
+                  <option value="very difficult" {% if qual == 'very difficult' %}selected{% endif %}>Very difficult</option>
+                  <option value="difficult" {% if qual == 'difficult' %}selected{% endif %}>Difficult</option>
+                  <option value="neutral" {% if qual == 'neutral' %}selected{% endif %}>Neutral</option>
+                  <option value="favourable" {% if qual == 'favourable' %}selected{% endif %}>Favourable</option>
+                  <option value="very favourable" {% if qual == 'very favourable' %}selected{% endif %}>Very favourable</option>
+                </select>
+              {% else %}
+                <select name="qual_{{ var_key }}_{{ y }}"
+                        class="cell-qual row-{{ var_key }}"
+                        {{ disabled_attr }}
+                        style="width:60px; padding:0.2rem; border:1px solid #ccc; border-radius:3px; font-size:0.75rem; text-align:center; {{ bg }}{% if row_mode == 'num' %} display:none;{% endif %}">
+                  <option value="">—</option>
+                  {% if var_type == 'rate' %}
+                    <option value="strong increase" {% if qual == 'strong increase' %}selected{% endif %}>Strong increase</option>
+                    <option value="minor increase" {% if qual == 'minor increase' %}selected{% endif %}>Minor increase</option>
+                    <option value="stable" {% if qual == 'stable' %}selected{% endif %}>Stable</option>
+                    <option value="minor decrease" {% if qual == 'minor decrease' %}selected{% endif %}>Minor decrease</option>
+                    <option value="strong decrease" {% if qual == 'strong decrease' %}selected{% endif %}>Strong decrease</option>
+                  {% elif var_type == 'level' %}
+                    <option value="100%" {% if qual == '100%' %}selected{% endif %}>100%</option>
+                    <option value="very high" {% if qual == 'very high' %}selected{% endif %}>Very high</option>
+                    <option value="high" {% if qual == 'high' %}selected{% endif %}>High</option>
+                    <option value="average" {% if qual == 'average' %}selected{% endif %}>Average</option>
+                    <option value="low" {% if qual == 'low' %}selected{% endif %}>Low</option>
+                    <option value="very low" {% if qual == 'very low' %}selected{% endif %}>Very low</option>
+                    <option value="0%" {% if qual == '0%' %}selected{% endif %}>0%</option>
+                  {% endif %}
+                </select>
+                <input type="text" name="value_{{ var_key }}_{{ y }}"
+                       value="{{ val }}"
+                       class="cell-num row-{{ var_key }}"
+                       {{ disabled_attr }}
+                       style="width:60px; padding:0.25rem; border:1px solid #ccc; border-radius:3px; text-align:center; font-size:0.8rem; {{ bg }}{% if row_mode == 'qual' %} display:none;{% endif %}"
+                       maxlength="20" placeholder="#">
+              {% endif %}
+            </td>
+            <td id="cmtCell{{ var_key }}_{{ y }}" style="padding:0.2rem; border-bottom:1px solid #ddd; text-align:center; vertical-align:middle;">
+              <input type="text" name="comment_{{ var_key }}_{{ y }}" value="{{ cmt }}" class="row-{{ var_key }}"
+                     {{ disabled_attr }}
+                     style="width:135px; padding:0.25rem; border:1px solid #ccc; border-radius:3px; font-size:0.8rem;" maxlength="80">
+            </td>
+          {% endif %}
+        {% endfor %}
+      </tr>
+      {% endfor %}
+  </tbody>
+</table></div>
+  <div style="margin-top:1rem;">
+    <button type="submit" style="background:#1a3a5c; color:#fff; border:none; padding:0.5rem 1.5rem; border-radius:4px; cursor:pointer;">Save</button>
+    <a href="{{ url_for('dashboard') }}" style="margin-left:1rem; color:#1a3a5c;">Back to home</a>
+  </div>
+</form>
+<script>
+var openYears = new Set();
+openYears.add({{ default_open }});
+
+function toggleYear(y) {
+  var sw = document.getElementById('yearSwitch' + y);
+  var col = document.getElementById('cmtCol' + y);
+  var opened = openYears.has(y);
+  var badge = document.getElementById('reportIndicator_' + y);
+  var textarea = document.querySelector('textarea[name="comment_outcome_reporting_' + y + '"]');
+  var cmtCells = document.querySelectorAll('[id^="cmtCell"][id$="_' + y + '"]');
+  var cmtHead = document.getElementById('cmtHead' + y);
+  var reportCell = document.getElementById('reportCell_' + y);
+  var yHead = document.getElementById('yearHead' + y);
+  if (opened) {
+    openYears.delete(y);
+    col.style.width = '0';
+    col.style.minWidth = '0';
+    cmtCells.forEach(function(c) { c.style.display = 'none'; });
+    if (cmtHead) cmtHead.style.display = 'none';
+    disableYear(y, true);
+    setCommentsData(y, true);
+    if (badge) badge.style.display = 'inline-block';
+    if (textarea) textarea.style.display = 'none';
+    if (yHead) yHead.setAttribute('colspan', '1');
+    if (reportCell) reportCell.setAttribute('colspan', '1');
+  } else {
+    openYears.add(y);
+    col.style.width = '';
+    col.style.minWidth = '150px';
+    cmtCells.forEach(function(c) { c.style.display = ''; });
+    if (cmtHead) cmtHead.style.display = '';
+    disableYear(y, false);
+    setCommentsData(y, false);
+    if (badge) badge.style.display = 'none';
+    if (textarea) textarea.style.display = 'block';
+    if (yHead) yHead.setAttribute('colspan', '2');
+    if (reportCell) reportCell.setAttribute('colspan', '2');
+  }
+}
+
+function disableYear(y, disabled) {
+  document.querySelectorAll('.row-outcome_reporting, [name$="_' + y + '"]').forEach(function(el) {
+    if (!el.name || !el.name.endsWith('_' + y)) return;
+    if (disabled) {
+      el.setAttribute('disabled', 'disabled');
+    } else {
+      el.removeAttribute('disabled');
+    }
+  });
+}
+
+function setCommentsData(y, showTooltip) {
+  document.querySelectorAll('[id^="cmtCell"][id$="_' + y + '"]').forEach(function(el) {
+    var parts = el.id.replace('cmtCell', '').split('_');
+    if (parts.length < 2) return;
+    var varKey = parts.slice(0, -1).join('_');
+    var cmt = el.querySelector('input, textarea') ? el.querySelector('input, textarea').value : '';
+    var valCell = el.previousElementSibling;
+    if (valCell) {
+      if (showTooltip && cmt) valCell.setAttribute('data-cmt', cmt);
+      else valCell.removeAttribute('data-cmt');
+    }
+  });
+
+  var textarea = document.querySelector('textarea[name="comment_outcome_reporting_' + y + '"]');
+  var badge = document.getElementById('reportIndicator_' + y);
+  if (textarea && badge) {
+    var cmt = textarea.value;
+    if (showTooltip && cmt) {
+      badge.setAttribute('data-cmt', cmt);
+      badge.textContent = cmt.length + ' chars';
+    } else {
+      badge.removeAttribute('data-cmt');
+      if (!cmt) {
+        badge.textContent = 'no input';
+      } else {
+        badge.textContent = cmt.length + ' chars';
+      }
+    }
+  }
+}
+
+function toggleRow(btn) {
+  var tr = btn.closest('tr');
+  var varKey = tr.getAttribute('data-var');
+  var isNum = btn.textContent.trim() === 'approx';
+  var nums = tr.querySelectorAll('.cell-num');
+  var quals = tr.querySelectorAll('.cell-qual');
+  var modeInput = document.getElementById('rowMode_' + varKey);
+
+  if (isNum) {
+    nums.forEach(function(el) { el.style.display = ''; });
+    quals.forEach(function(el) { el.style.display = 'none'; });
+    btn.textContent = 'detail';
+    btn.title = 'Switch to approximate';
+    if (modeInput) modeInput.value = 'num';
+  } else {
+    nums.forEach(function(el) { el.style.display = 'none'; });
+    quals.forEach(function(el) { el.style.display = ''; });
+    btn.textContent = 'approx';
+    btn.title = 'Switch to precise';
+    if (modeInput) modeInput.value = 'qual';
+  }
+}
+
+document.querySelectorAll('[id^="cmtCol"]').forEach(function(col) {
+  if (col.style.width === '0' || col.style.width === '0px') {
+    var y = parseInt(col.id.replace('cmtCol', ''));
+    setCommentsData(y, true);
+    document.querySelectorAll('[id^="cmtCell"][id$="_' + y + '"]').forEach(function(c) { c.style.display = 'none'; });
+    var cmtHead = document.getElementById('cmtHead' + y);
+    if (cmtHead) cmtHead.style.display = 'none';
+    var yHead = document.getElementById('yearHead' + y);
+    if (yHead) yHead.setAttribute('colspan', '1');
+    var reportCell = document.getElementById('reportCell_' + y);
+    if (reportCell) reportCell.setAttribute('colspan', '1');
+  }
+});
+disableYear({{ default_open }}, false);
+</script>
+{% endblock %}

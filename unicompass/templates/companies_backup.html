@@ -1,0 +1,178 @@
+{% extends "layout.html" %}
+{% block title %}— Major Companies{% endblock %}
+{% block content %}
+{% if view_org and view_org != session_org %}<p style="margin-bottom:0.5rem; font-size:0.9rem; color:#d63384;">Viewing: <strong>{{ view_org }}</strong></p>{% endif %}
+<p style="color:#555; margin-bottom:1rem;">Data from the largest companies within the sector — auto-sorted by number of workers.</p>
+<p style="color:#2b6cb0; margin-bottom:1rem; font-size:0.85rem; font-style:italic;">
+  Note: If your measurement/calculation for any variable differs from the standard definition, please specify how it is measured in the corresponding comment box.
+</p>
+<form method="POST">
+  {% if view_org %}<input type="hidden" name="org" value="{{ view_org }}">{% endif %}
+  <div style="margin-bottom:1rem;">
+    <label for="year" style="font-weight:600; margin-right:0.5rem;">Year:</label>
+    <select name="year" id="year" onchange="this.form.submit()" style="padding:0.35rem; border:1px solid #ccc; border-radius:3px;">
+      {% for y in years %}
+      <option value="{{ y }}" {% if y == selected_year %}selected{% endif %}>{{ y }}</option>
+      {% endfor %}
+    </select>
+    <noscript><button type="submit" style="margin-left:0.5rem;">Go</button></noscript>
+  </div>
+  {% set initial_rows = 5 %}
+  {% set saved_len = saved|length %}
+  <div class="table-dual-wrap"><div class="table-dual">
+    <div class="table-fixed-col">
+      <table class="table-fixed" style="font-size:0.85rem;">
+        <thead>
+          <tr>
+            <th style="text-align:left; padding:0.4rem 0.6rem; border-bottom:2px solid #1a3a5c;">#</th>
+            <th style="text-align:left; padding:0.4rem 0.6rem; border-bottom:2px solid #1a3a5c;">Company name</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for i in range(10) %}
+          {% set row = saved[i] if i < saved|length else {} %}
+          <tr class="company-row" {% if i >= initial_rows %}style="display:none;"{% endif %}>
+            <td style="padding:0.2rem 0.6rem; border-bottom:1px solid #ddd; color:#888; text-align:center;">{{ i + 1 }}</td>
+            <td style="padding:0.2rem; border-bottom:1px solid #ddd;">
+              <input type="text" name="company_name_{{ i }}" value="{{ row.get('company_name', '') }}"
+                     style="width:160px; padding:0.25rem; border:1px solid #ccc; border-radius:3px; font-size:0.8rem;" maxlength="200">
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="table-scrollable-col">
+      <table class="table-scrollable" style="font-size:0.85rem;">
+        <thead>
+          <tr>
+            <th style="text-align:center; padding:0.4rem 0.6rem; border-bottom:2px solid #1a3a5c;">
+              <span class="var-def" title="Number of workers in the national establishment(s) of the company.">Workers</span>
+            </th>
+            <th style="text-align:center; padding:0.4rem 0.6rem; border-bottom:2px solid #1a3a5c;">
+              <span class="var-def" title="MNC = Multi-national company">MNC</span>
+            </th>
+            <th style="text-align:center; padding:0.4rem 0.6rem; border-bottom:2px solid #1a3a5c;">
+              <span class="var-def" title="Whether a collective agreement is in place at the company.">CLA</span>
+            </th>
+            <th style="text-align:center; padding:0.4rem 0.6rem; border-bottom:2px solid #1a3a5c;">
+              <span class="var-def" title="Number of active trade unions represented in the company.">Unions</span>
+            </th>
+            <th style="text-align:center; padding:0.4rem 0.6rem; border-bottom:2px solid #1a3a5c;">
+              <span class="var-def" title="Share of workers of all national establishments that are a member of any trade union.">Union density</span>
+            </th>
+            <th style="text-align:center; padding:0.4rem 0.6rem; border-bottom:2px solid #1a3a5c;">
+              <span class="var-def" title="Whether there is a worker representation body (e.g. works council, shop stewards).">Representation</span>
+            </th>
+            <th style="text-align:center; padding:0.4rem 0.6rem; border-bottom:2px solid #1a3a5c;">
+              <span class="var-def" title="EWC = European works council">EWC</span>
+            </th>
+            <th style="text-align:center; padding:0.4rem 0.6rem; border-bottom:2px solid #1a3a5c;">
+              <span class="var-def" title="Additional comments. Max 280 characters.">Comment</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for i in range(10) %}
+          {% set row = saved[i] if i < saved|length else {} %}
+          <tr class="company-row" {% if i >= initial_rows %}style="display:none;"{% endif %}>
+            <td style="padding:0.2rem; border-bottom:1px solid #ddd; text-align:center;">
+              <input type="text" name="workers_{{ i }}" value="{{ row.get('workers', '') }}"
+                     style="width:65px; padding:0.25rem; border:1px solid #ccc; border-radius:3px; text-align:center; font-size:0.8rem;" placeholder="#" maxlength="20">
+            </td>
+            <td style="padding:0.2rem; border-bottom:1px solid #ddd; text-align:center;">
+              <select name="mnc_{{ i }}" style="padding:0.25rem; border:1px solid #ccc; border-radius:3px; font-size:0.8rem;">
+                <option value="">—</option>
+                <option value="yes" {% if row.get('mnc') == 'yes' %}selected{% endif %}>Yes</option>
+                <option value="no" {% if row.get('mnc') == 'no' %}selected{% endif %}>No</option>
+              </select>
+            </td>
+            <td style="padding:0.2rem; border-bottom:1px solid #ddd; text-align:center;">
+              <select name="agreement_{{ i }}" style="padding:0.25rem; border:1px solid #ccc; border-radius:3px; font-size:0.8rem;">
+                <option value="">—</option>
+                <option value="yes" {% if row.get('agreement') == 'yes' %}selected{% endif %}>Yes</option>
+                <option value="no" {% if row.get('agreement') == 'no' %}selected{% endif %}>No</option>
+              </select>
+            </td>
+            <td style="padding:0.2rem; border-bottom:1px solid #ddd; text-align:center;">
+              <input type="text" name="number_of_unions_{{ i }}" value="{{ row.get('number_of_unions', '') }}"
+                     style="width:55px; padding:0.25rem; border:1px solid #ccc; border-radius:3px; text-align:center; font-size:0.8rem;" placeholder="#" maxlength="20">
+            </td>
+            <td style="padding:0.2rem; border-bottom:1px solid #ddd; text-align:center;">
+              <select name="union_density_{{ i }}" style="padding:0.25rem; border:1px solid #ccc; border-radius:3px; font-size:0.8rem;">
+                <option value="">—</option>
+                <option value="0%" {% if row.get('union_density') == '0%' %}selected{% endif %}>0%</option>
+                <option value="1-24%" {% if row.get('union_density') == '1-24%' %}selected{% endif %}>1-24%</option>
+                <option value="25-49%" {% if row.get('union_density') == '25-49%' %}selected{% endif %}>25-49%</option>
+                <option value="50-74%" {% if row.get('union_density') == '50-74%' %}selected{% endif %}>50-74%</option>
+                <option value="75-99%" {% if row.get('union_density') == '75-99%' %}selected{% endif %}>75-99%</option>
+                <option value="100%" {% if row.get('union_density') == '100%' %}selected{% endif %}>100%</option>
+              </select>
+            </td>
+            <td style="padding:0.2rem; border-bottom:1px solid #ddd; text-align:center;">
+              <select name="worker_representation_{{ i }}" style="padding:0.25rem; border:1px solid #ccc; border-radius:3px; font-size:0.8rem;">
+                <option value="">—</option>
+                <option value="yes" {% if row.get('worker_representation') == 'yes' %}selected{% endif %}>Yes</option>
+                <option value="no" {% if row.get('worker_representation') == 'no' %}selected{% endif %}>No</option>
+              </select>
+            </td>
+            <td style="padding:0.2rem; border-bottom:1px solid #ddd; text-align:center;">
+              <select name="ewc_presence_{{ i }}" style="padding:0.25rem; border:1px solid #ccc; border-radius:3px; font-size:0.8rem;">
+                <option value="">—</option>
+                <option value="yes" {% if row.get('ewc_presence') == 'yes' %}selected{% endif %}>Yes</option>
+                <option value="no" {% if row.get('ewc_presence') == 'no' %}selected{% endif %}>No</option>
+              </select>
+            </td>
+            {% set _cmt_raw = row.get('comment', '') %}
+            {% set _cmt_parts = _cmt_raw.split('\n', 1) %}
+            {% set _cmt_title = _cmt_parts[0] %}
+            {% set _cmt_content = _cmt_parts[1] if _cmt_parts|length > 1 else '' %}
+            <td style="padding:0.2rem; border-bottom:1px solid #ddd; text-align:center;">
+              <span class="popup-trigger" onclick="openPopup('comment_{{ i }}', 280)" data-def="{{ (_cmt_title + '\n\n' + _cmt_content) if _cmt_content else (_cmt_title or '—') }}">
+                <span class="popup-title" id="popupTitle_comment_{{ i }}">{{ _cmt_title or '—' }}</span>
+                <span class="edit-icon">&#9998;</span>
+              </span>
+              <input type="hidden" name="comment_title_{{ i }}" id="hiddenTitle_comment_{{ i }}" value="{{ _cmt_title }}">
+              <input type="hidden" name="comment_content_{{ i }}" id="hiddenContent_comment_{{ i }}" value="{{ _cmt_content }}">
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div></div>
+  <div style="margin-top:0.5rem;">
+    <span id="addCompanyRow" class="add-row-btn" onclick="addCompanyRow()">+ Add row</span>
+  </div>
+  <div style="margin-top:1rem;">
+    <button type="submit" style="background:#1a3a5c; color:#fff; border:none; padding:0.5rem 1.5rem; border-radius:4px; cursor:pointer;">Save</button>
+    <a href="{{ url_for('dashboard') }}" style="margin-left:1rem; color:#1a3a5c;">Back to dashboard</a>
+  </div>
+</form>
+<script>
+var companyRowCount = Math.max({{ initial_rows }}, Math.min(10, {{ saved_len }}));
+var companyTotal = 10;
+(function() {
+  var fixedRows = document.querySelectorAll('.table-fixed .company-row');
+  var scrollRows = document.querySelectorAll('.table-scrollable .company-row');
+  for (var i = 0; i < companyRowCount; i++) {
+    if (fixedRows[i]) fixedRows[i].style.display = '';
+    if (scrollRows[i]) scrollRows[i].style.display = '';
+  }
+  if (companyRowCount >= companyTotal) {
+    document.getElementById('addCompanyRow').style.display = 'none';
+  }
+})();
+function addCompanyRow() {
+  if (companyRowCount >= companyTotal) return;
+  var fixedRows = document.querySelectorAll('.table-fixed .company-row');
+  var scrollRows = document.querySelectorAll('.table-scrollable .company-row');
+  if (fixedRows[companyRowCount]) fixedRows[companyRowCount].style.display = '';
+  if (scrollRows[companyRowCount]) scrollRows[companyRowCount].style.display = '';
+  companyRowCount++;
+  if (companyRowCount >= companyTotal) {
+    document.getElementById('addCompanyRow').style.display = 'none';
+  }
+}
+</script>
+{% endblock %}

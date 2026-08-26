@@ -1,0 +1,63 @@
+{% extends "layout.html" %}
+{% block title %}— Admin{% endblock %}
+{% block content %}
+<p style="color:#555; margin-bottom:1rem;">Completion progress per affiliate.</p>
+<div style="margin-bottom:1rem;">
+  <label for="year" style="font-weight:600; margin-right:0.5rem;">Year:</label>
+  <select id="year" onchange="window.location.href='?year='+this.value" style="padding:0.35rem; border:1px solid #ccc; border-radius:3px;">
+    <option value="" {% if not selected_year %}selected{% endif %}>All years</option>
+    {% for y in years %}
+    <option value="{{ y }}" {% if selected_year == y %}selected{% endif %}>{{ y }}</option>
+    {% endfor %}
+  </select>
+</div>
+{% if not orgs %}
+  <p style="color:#888;">No organisations have entered data yet.</p>
+{% else %}
+<div class="table-wrap"><table style="border-collapse:collapse; width:100%; font-size:0.85rem;">
+  <thead>
+    <tr>
+      <th style="text-align:left; padding:0.4rem 0.6rem; border-bottom:2px solid #1a3a5c;">Organisation</th>
+      <th style="text-align:center; padding:0.4rem 0.6rem; border-bottom:2px solid #1a3a5c;">Annual Results</th>
+      <th style="text-align:center; padding:0.4rem 0.6rem; border-bottom:2px solid #1a3a5c;">Agreements</th>
+      <th style="text-align:center; padding:0.4rem 0.6rem; border-bottom:2px solid #1a3a5c;">Companies</th>
+      <th style="text-align:center; padding:0.4rem 0.6rem; border-bottom:2px solid #1a3a5c;">Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for org in orgs %}
+    {% set p = progress.get(org, {}) %}
+    <tr>
+      <td style="padding:0.4rem 0.6rem; border-bottom:1px solid #ddd; font-weight:600;">{{ org }}</td>
+      <td style="padding:0.4rem 0.6rem; border-bottom:1px solid #ddd; text-align:center;">
+        {% set a = p.get('annual', {}) %}
+        {{ a.get('filled', 0) }}/{{ a.get('total', 0) }}
+        <div style="height:6px; background:#eee; border-radius:3px; margin-top:3px; width:100px; margin:3px auto 0;">
+          <div style="height:6px; background:#1a3a5c; border-radius:3px; width:{% if a.get('total', 0) > 0 %}{{ (a.get('filled', 0) / a.get('total', 0)) * 100 }}{% else %}0{% endif %}%;"></div>
+        </div>
+      </td>
+      <td style="padding:0.4rem 0.6rem; border-bottom:1px solid #ddd; text-align:center;">
+        {% set a = p.get('agreements', {}) %}
+        {{ a.get('filled', 0) }}/{{ a.get('total', 0) }}
+        <div style="height:6px; background:#eee; border-radius:3px; margin-top:3px; width:100px; margin:3px auto 0;">
+          <div style="height:6px; background:#1a3a5c; border-radius:3px; width:{% if a.get('total', 0) > 0 %}{{ (a.get('filled', 0) / a.get('total', 0)) * 100 }}{% else %}0{% endif %}%;"></div>
+        </div>
+      </td>
+      <td style="padding:0.4rem 0.6rem; border-bottom:1px solid #ddd; text-align:center;">
+        {% set a = p.get('companies', {}) %}
+        {{ a.get('filled', 0) }}/{{ a.get('total', 0) }}
+        <div style="height:6px; background:#eee; border-radius:3px; margin-top:3px; width:100px; margin:3px auto 0;">
+          <div style="height:6px; background:#1a3a5c; border-radius:3px; width:{% if a.get('total', 0) > 0 %}{{ (a.get('filled', 0) / a.get('total', 0)) * 100 }}{% else %}0{% endif %}%;"></div>
+        </div>
+      </td>
+      <td style="padding:0.4rem 0.6rem; border-bottom:1px solid #ddd; text-align:center; white-space:nowrap;">
+        <a href="{{ url_for('annual_results', org=org) }}" style="margin:0 0.3rem;">Annual</a>
+        <a href="{{ url_for('agreements', org=org) }}" style="margin:0 0.3rem;">Agreements</a>
+        <a href="{{ url_for('companies', org=org) }}" style="margin:0 0.3rem;">Companies</a>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table></div>
+{% endif %}
+{% endblock %}

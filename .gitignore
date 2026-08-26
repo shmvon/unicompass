@@ -1,0 +1,8 @@
+# macOS
+.DS_Store
+
+# Ignore development-gitignore
+development-gitignore/
+users.csv
+data/
+/data
