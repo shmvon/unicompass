@@ -194,8 +194,14 @@ def init_db():
 
 
 def check_login_rate_limit(user):
-    """Return True if the user is allowed to attempt login, False if rate-limited."""
+    """Return True if the user is allowed to attempt login, False if blocked or rate-limited."""
     user = user.strip().lower()
+    try:
+        from auth import is_user_blocked
+        if is_user_blocked(user):
+            return False
+    except Exception:
+        pass
     with get_db() as db:
         ban = db.execute("SELECT banned_until FROM login_bans WHERE user = ?", (user,)).fetchone()
         if ban:
@@ -207,30 +213,31 @@ def check_login_rate_limit(user):
 
 
 def record_failed_login(user):
-    """Record a failed login attempt; ban for 15 minutes after 5 failures within 15 minutes."""
+    """
+    Record a failed login attempt for a user.
+    If the user reaches 5 failed attempts, removes access by setting their pincode to '9999' in users.csv.
+    Returns the total count of failed login attempts for this user.
+    """
     user = user.strip().lower()
     now_utc = datetime.datetime.now(datetime.timezone.utc)
     with get_db() as db:
         db.execute("INSERT INTO login_attempts (user, attempted_at) VALUES (?, ?)", (user, now_utc.isoformat()))
-        cutoff = (now_utc - datetime.timedelta(minutes=15)).isoformat()
         count = db.execute(
-            "SELECT COUNT(*) FROM login_attempts WHERE user = ? AND attempted_at >= ?",
-            (user, cutoff)
+            "SELECT COUNT(*) FROM login_attempts WHERE LOWER(TRIM(user)) = ?",
+            (user,)
         ).fetchone()[0]
         if count >= 5:
-            banned_until = (now_utc + datetime.timedelta(minutes=15)).isoformat()
-            db.execute(
-                "INSERT OR REPLACE INTO login_bans (user, banned_until) VALUES (?, ?)",
-                (user, banned_until)
-            )
+            from auth import set_user_pincode
+            set_user_pincode(user, "9999")
+        return count
 
 
 def clear_login_attempts(user):
-    """Clear failed login attempts for a user after a successful login."""
+    """Clear failed login attempts for a user after a successful login or reset."""
     user = user.strip().lower()
     with get_db() as db:
-        db.execute("DELETE FROM login_attempts WHERE user = ?", (user,))
-        db.execute("DELETE FROM login_bans WHERE user = ?", (user,))
+        db.execute("DELETE FROM login_attempts WHERE LOWER(TRIM(user)) = ?", (user,))
+        db.execute("DELETE FROM login_bans WHERE LOWER(TRIM(user)) = ?", (user,))
 
 
 def get_annual_results(organisation, years=None, sector=None):

@@ -11,6 +11,8 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 
 from auth import (
     authenticate,
+    get_user,
+    is_user_blocked,
     get_all_organisations as get_all_orgs_csv,
     get_all_sectors,
     get_all_org_sector_combinations,
@@ -234,10 +236,31 @@ def login():
         username = request.form.get("user", "").strip()
         pincode = request.form.get("pincode", "").strip()
 
-        if not check_login_rate_limit(username):
-            flash("Too many failed attempts. Please try again later.", "error")
+        if not username or not pincode:
+            flash("Please enter both username and pincode.", "error")
             return render_template("login.html")
 
+        # 1. Check if account is already locked (pincode is 9999)
+        existing_user = get_user(username)
+        if existing_user and existing_user.get("pincode", "").strip() == "9999":
+            flash("This account has been locked. Please contact the administrator for a new pincode.", "error")
+            return render_template("login.html")
+
+        # 2. Pincode 9999 is always blocked
+        if pincode == "9999":
+            strikes = record_failed_login(username)
+            if strikes >= 5:
+                flash("You have exceeded 5 failed login attempts. Please contact the administrator for a new pincode.", "error")
+            else:
+                flash("Invalid username or pincode.", "error")
+            return render_template("login.html")
+
+        # 3. Check rate limit
+        if not check_login_rate_limit(username):
+            flash("Too many failed attempts. Please contact the administrator for a new pincode.", "error")
+            return render_template("login.html")
+
+        # 4. Attempt authentication
         user = authenticate(username, pincode)
         if user:
             clear_login_attempts(username)
@@ -249,8 +272,14 @@ def login():
             session["sector"] = user_sectors[0] if user_sectors else "General"
             flash(f"Welcome, {user['user']}!")
             return redirect(url_for("dashboard"))
-        record_failed_login(username)
-        flash("Invalid username or pincode.", "error")
+
+        # 5. Failed attempt: record strike
+        strikes = record_failed_login(username)
+        if strikes >= 5:
+            flash("You have exceeded 5 failed login attempts. Please contact the administrator for a new pincode.", "error")
+        else:
+            flash("Invalid username or pincode.", "error")
+
     return render_template("login.html")
 
 

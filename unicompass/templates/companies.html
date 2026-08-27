@@ -128,12 +128,12 @@
           <td class="tbl-cell center">
             <select name="union_density_{{ i }}" class="input-cell">
               <option value="">—</option>
-              <option value="< 10%" {% if row.get('union_density')=='< 10%' or row.get('union_density')=='-10' or row.get('union_density')=='0%' %}selected{% endif %}>&lt; 10%</option>
-              <option value="10-24%" {% if row.get('union_density')=='10-24%' or row.get('union_density')=='1-24%' %}selected{% endif %}>10-24%</option>
+              <option value="< 10%" {% if row.get('union_density')=='< 10%' %}selected{% endif %}>&lt; 10%</option>
+              <option value="10-24%" {% if row.get('union_density')=='10-24%' %}selected{% endif %}>10-24%</option>
               <option value="25-49%" {% if row.get('union_density')=='25-49%' %}selected{% endif %}>25-49%</option>
               <option value="50-74%" {% if row.get('union_density')=='50-74%' %}selected{% endif %}>50-74%</option>
-              <option value="75-89%" {% if row.get('union_density')=='75-89%' or row.get('union_density')=='75-99%' %}selected{% endif %}>75-89%</option>
-              <option value="90%+" {% if row.get('union_density')=='90%+' or row.get('union_density')=='100%' %}selected{% endif %}>90%+</option>
+              <option value="75-89%" {% if row.get('union_density')=='75-89%' %}selected{% endif %}>75-89%</option>
+              <option value="90%+" {% if row.get('union_density')=='90%+' %}selected{% endif %}>90%+</option>
             </select>
           </td>
 

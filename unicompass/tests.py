@@ -2,11 +2,20 @@ import unittest
 import os
 import json
 from app import app, compute_cell_colors, ANNUAL_VARIABLES
-from auth import authenticate, load_users, get_all_sectors, get_all_org_sector_combinations
+from auth import (
+    authenticate,
+    load_users,
+    get_user,
+    set_user_pincode,
+    is_user_blocked,
+    get_all_sectors,
+    get_all_org_sector_combinations,
+)
 from models import (
     init_db, get_annual_results, save_annual_results,
     get_agreements, save_agreements, get_companies, save_companies,
-    compute_progress, export_all, generate_export_zip
+    compute_progress, export_all, generate_export_zip,
+    clear_login_attempts, record_failed_login
 )
 
 class UniCompassTestCase(unittest.TestCase):
@@ -478,6 +487,52 @@ class UniCompassTestCase(unittest.TestCase):
             )
             self.assertEqual(res_comp.status_code, 200)
             self.assertEqual(res_comp.json.get("status"), "ok")
+
+    def test_five_strikes_lockout_and_9999_pincode_blocked(self):
+        test_user = "test@example.com"
+        orig_pin = "5678"
+        try:
+            # Ensure starting state
+            set_user_pincode(test_user, orig_pin)
+            clear_login_attempts(test_user)
+
+            # 1. Pincode 9999 is always blocked
+            res_9999 = self.client.post("/login", data={"user": test_user, "pincode": "9999"}, follow_redirects=True)
+            self.assertIn("Invalid username or pincode", res_9999.get_data(as_text=True))
+            clear_login_attempts(test_user)
+
+            # 2. Attempt 4 failed logins with wrong pincode
+            for i in range(4):
+                res = self.client.post("/login", data={"user": test_user, "pincode": "0001"}, follow_redirects=True)
+                self.assertIn("Invalid username or pincode", res.get_data(as_text=True))
+                user_info = get_user(test_user)
+                self.assertEqual(user_info["pincode"], orig_pin)
+
+            # 3. Fifth failed attempt triggers lockout and sets pincode to 9999
+            res_5 = self.client.post("/login", data={"user": test_user, "pincode": "0001"}, follow_redirects=True)
+            html_5 = res_5.get_data(as_text=True)
+            self.assertIn("contact the administrator for a new pincode", html_5)
+
+            # Verify in users.csv that pincode is now 9999
+            user_info = get_user(test_user)
+            self.assertEqual(user_info["pincode"], "9999")
+            self.assertTrue(is_user_blocked(test_user))
+
+            # 4. Subsequent login attempt (even with original pin or 9999) is blocked with administrator contact message
+            res_locked = self.client.post("/login", data={"user": test_user, "pincode": orig_pin}, follow_redirects=True)
+            html_locked = res_locked.get_data(as_text=True)
+            self.assertIn("contact the administrator for a new pincode", html_locked)
+
+            # 5. Admin resets user pincode
+            set_user_pincode(test_user, "4321")
+            clear_login_attempts(test_user)
+            res_restored = self.client.post("/login", data={"user": test_user, "pincode": "4321"}, follow_redirects=True)
+            self.assertIn(f"Welcome, {test_user}!", res_restored.get_data(as_text=True))
+
+        finally:
+            # Restore original pin in users.csv
+            set_user_pincode(test_user, orig_pin)
+            clear_login_attempts(test_user)
 
 
 if __name__ == "__main__":

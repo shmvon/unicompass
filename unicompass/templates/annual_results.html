@@ -191,7 +191,7 @@
               <option value="20-39%" {% if qual=='20-39%' %}selected{% endif %}>20–39%</option>
               <option value="0-19%" {% if qual=='0-19%' %}selected{% endif %}>0–19%</option>
             </select>
-            {% elif var_key == 'avg_pay_increase' or var_key == 'avg_wage_increase' %}
+            {% elif var_key == 'avg_pay_increase' %}
             <select name="qual_{{ var_key }}_{{ y }}" class="cell-qual row-{{ var_key }}"
               onchange="updateLikertColor(this)"
               style="width:75px; padding:0.2rem; border:1px solid #ccc; border-radius:3px; font-size:0.75rem; text-align:center; {{ bg }}{% if row_mode == 'num' %} display:none;{% endif %}">
@@ -212,23 +212,19 @@
               <option value="">—</option>
               <option value="very high" {% if qual=='very high' %}selected{% endif %}>Very high</option>
               <option value="high" {% if qual=='high' %}selected{% endif %}>High</option>
-              <option value="moderate" {% if qual=='moderate' or qual=='average' %}selected{% endif %}>Moderate</option>
+              <option value="moderate" {% if qual=='moderate' %}selected{% endif %}>Moderate</option>
               <option value="low" {% if qual=='low' %}selected{% endif %}>Low</option>
-              <option value="none" {% if qual=='none' or qual=='very low' %}selected{% endif %}>None</option>
+              <option value="none" {% if qual=='none' %}selected{% endif %}>None</option>
             </select>
             {% elif var_key == 'multi_employer_agreements' %}
             <select name="qual_{{ var_key }}_{{ y }}" class="cell-qual row-{{ var_key }}"
               onchange="updateLikertColor(this)"
               style="width:75px; padding:0.2rem; border:1px solid #ccc; border-radius:3px; font-size:0.75rem; text-align:center; {{ bg }}{% if row_mode == 'num' %} display:none;{% endif %}">
               <option value="">—</option>
-              <option value="many agreements / many employers" {% if qual=='many agreements / many employers' or
-                qual=='many agreements/many employers' %}selected{% endif %}>Many agreements / many employers</option>
-              <option value="many agreements / few employers" {% if qual=='many agreements / few employers' or
-                qual=='many agreements/few employers' %}selected{% endif %}>Many agreements / few employers</option>
-              <option value="few agreements / many employers" {% if qual=='few agreements / many employers' or
-                qual=='few agreements/many employers' %}selected{% endif %}>Few agreements / many employers</option>
-              <option value="few agreements / few employers" {% if qual=='few agreements / few employers' or
-                qual=='few agreements/few employers' %}selected{% endif %}>Few agreements / few employers</option>
+              <option value="many agreements / many employers" {% if qual=='many agreements / many employers' %}selected{% endif %}>Many agreements / many employers</option>
+              <option value="many agreements / few employers" {% if qual=='many agreements / few employers' %}selected{% endif %}>Many agreements / few employers</option>
+              <option value="few agreements / many employers" {% if qual=='few agreements / many employers' %}selected{% endif %}>Few agreements / many employers</option>
+              <option value="few agreements / few employers" {% if qual=='few agreements / few employers' %}selected{% endif %}>Few agreements / few employers</option>
               <option value="no agreements" {% if qual=='no agreements' %}selected{% endif %}>No agreements</option>
             </select>
             {% elif var_key == 'single_employer_agreements' %}
@@ -249,7 +245,7 @@
               <option value="">—</option>
               <option value="very high" {% if qual=='very high' %}selected{% endif %}>Very high</option>
               <option value="high" {% if qual=='high' %}selected{% endif %}>High</option>
-              <option value="normal" {% if qual=='normal' or qual=='average' %}selected{% endif %}>Normal</option>
+              <option value="normal" {% if qual=='normal' %}selected{% endif %}>Normal</option>
               <option value="low" {% if qual=='low' %}selected{% endif %}>Low</option>
               <option value="very low" {% if qual=='very low' %}selected{% endif %}>Very low</option>
             </select>
@@ -258,16 +254,11 @@
               onchange="updateLikertColor(this)"
               style="width:75px; padding:0.2rem; border:1px solid #ccc; border-radius:3px; font-size:0.75rem; text-align:center; {{ bg }}{% if row_mode == 'num' %} display:none;{% endif %}">
               <option value="">—</option>
-              <option value="strong inflation (+3%)" {% if qual=='strong inflation (+3%)' or qual=='strong inflation'
-                %}selected{% endif %}>Strong inflation (+3%)</option>
-              <option value="minor inflation (+1/+3%)" {% if qual=='minor inflation (+1/+3%)' or qual=='minor inflation'
-                %}selected{% endif %}>Minor inflation (+1/+3%)</option>
-              <option value="stable prices (+1/-1%)" {% if qual=='stable prices (+1/-1%)' or qual=='stable prices' or
-                qual=='stable' %}selected{% endif %}>Stable prices (+1/-1%)</option>
-              <option value="minor deflation (-1/-3%)" {% if qual=='minor deflation (-1/-3%)' or qual=='minor deflation'
-                %}selected{% endif %}>Minor deflation (-1/-3%)</option>
-              <option value="strong deflation (-3%)" {% if qual=='strong deflation (-3%)' or qual=='strong deflation'
-                %}selected{% endif %}>Strong deflation (-3%)</option>
+              <option value="strong inflation (+3%)" {% if qual=='strong inflation (+3%)' %}selected{% endif %}>Strong inflation (+3%)</option>
+              <option value="minor inflation (+1/+3%)" {% if qual=='minor inflation (+1/+3%)' %}selected{% endif %}>Minor inflation (+1/+3%)</option>
+              <option value="stable prices (+1/-1%)" {% if qual=='stable prices (+1/-1%)' %}selected{% endif %}>Stable prices (+1/-1%)</option>
+              <option value="minor deflation (-1/-3%)" {% if qual=='minor deflation (-1/-3%)' %}selected{% endif %}>Minor deflation (-1/-3%)</option>
+              <option value="strong deflation (-3%)" {% if qual=='strong deflation (-3%)' %}selected{% endif %}>Strong deflation (-3%)</option>
             </select>
             {% elif var_key == 'sectoral_productivity' %}
             <select name="qual_{{ var_key }}_{{ y }}" class="cell-qual row-{{ var_key }}"
