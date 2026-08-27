@@ -824,7 +824,7 @@
           <a href="{{ current_page }}?org={{ o|urlencode }}" class="{% if o == view_org %}active{% endif %}">{{ o }}</a>
           {% endfor %}
           <hr style="margin:0.2rem 0; border:none; border-top:1px solid #ddd;">
-          <a href="{{ url_for('admin') }}" style="color:#1a3a5c !important; font-weight:600;">Admin overview</a>
+          <a href="{{ url_for('admin', org=session_org) }}" style="color:#1a3a5c !important; font-weight:600;">Admin overview</a>
         </div>
       </div>
       {% else %}

@@ -4,6 +4,7 @@ UNI Compass — Flask application for tracking collective bargaining progress.
 
 from functools import wraps
 from io import BytesIO
+import datetime
 import os
 from werkzeug.utils import secure_filename
 from flask import Flask, render_template, request, redirect, url_for, session, flash, send_file, send_from_directory, abort
@@ -27,6 +28,7 @@ from models import (
     compute_progress,
     export_all,
     generate_export_zip,
+    backup_database,
     org_file_prefix,
     org_sector_file_prefix,
     check_login_rate_limit,
@@ -50,7 +52,15 @@ def inject_globals():
     current_user = session.get("user", "")
     current_sector = session.get("sector", "")
     user_sectors = session.get("user_sectors", [])
-    view_org = request.args.get("org") or session.get("organisation", "")
+    
+    if session.get("is_admin"):
+        req_org = request.args.get("org") or request.form.get("org")
+        if req_org:
+            session["view_org"] = req_org
+        view_org = session.get("view_org") or session.get("organisation", "")
+    else:
+        view_org = session.get("organisation", "")
+
     return {
         "current_user": current_user,
         "current_sector": current_sector,
@@ -325,12 +335,28 @@ def admin():
     )
 
 
+@app.route("/admin/download-db")
+@login_required
+@admin_required
+def admin_download_db():
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"unicompass_{timestamp}.db"
+    db_bytes = backup_database()
+    return send_file(
+        BytesIO(db_bytes),
+        mimetype="application/x-sqlite3",
+        as_attachment=True,
+        download_name=filename,
+    )
+
+
 @app.route("/annual-results", methods=["GET", "POST"])
 @login_required
 def annual_results():
     org = session["organisation"]
     if session.get("is_admin"):
-        org = request.args.get("org") or request.form.get("org") or org
+        org = request.args.get("org") or request.form.get("org") or session.get("view_org") or org
+        session["view_org"] = org
         if request.args.get("sector"):
             session["sector"] = request.args.get("sector")
     sector = session.get("sector", "")
@@ -362,7 +388,9 @@ def annual_results():
                     })
         save_annual_results(org, data, sector=sector)
         export_all()
-        flash("Annual results saved.")
+        flash(f"Annual results saved for {org}.")
+        if session.get("is_admin") and org != session.get("organisation"):
+            return redirect(url_for("annual_results", org=org))
         return redirect(url_for("annual_results"))
 
     saved = get_annual_results(org, sector=sector)
@@ -388,7 +416,8 @@ def annual_results():
 def agreements():
     org = session["organisation"]
     if session.get("is_admin"):
-        org = request.args.get("org") or request.form.get("org") or org
+        org = request.args.get("org") or request.form.get("org") or session.get("view_org") or org
+        session["view_org"] = org
         if request.args.get("sector"):
             session["sector"] = request.args.get("sector")
     sector = session.get("sector", "")
@@ -418,7 +447,9 @@ def agreements():
             })
         save_agreements(org, selected_year, rows, sector=sector)
         export_all()
-        flash("Major agreements saved.")
+        flash(f"Major agreements saved for {org}.")
+        if session.get("is_admin") and org != session.get("organisation"):
+            return redirect(url_for("agreements", year=selected_year, org=org))
         return redirect(url_for("agreements", year=selected_year))
 
     saved = get_agreements(org, selected_year, sector=sector)
@@ -430,7 +461,8 @@ def agreements():
 def companies():
     org = session["organisation"]
     if session.get("is_admin"):
-        org = request.args.get("org") or request.form.get("org") or org
+        org = request.args.get("org") or request.form.get("org") or session.get("view_org") or org
+        session["view_org"] = org
         if request.args.get("sector"):
             session["sector"] = request.args.get("sector")
     sector = session.get("sector", "")
@@ -460,7 +492,9 @@ def companies():
             })
         save_companies(org, selected_year, rows, sector=sector)
         export_all()
-        flash("Major companies saved.")
+        flash(f"Major companies saved for {org}.")
+        if session.get("is_admin") and org != session.get("organisation"):
+            return redirect(url_for("companies", year=selected_year, org=org))
         return redirect(url_for("companies", year=selected_year))
 
     saved = get_companies(org, selected_year, sector=sector)

@@ -7,6 +7,7 @@ import csv
 import sqlite3
 import os
 import datetime
+import tempfile
 from zipfile import ZipFile
 from io import BytesIO
 from contextlib import contextmanager
@@ -570,3 +571,25 @@ def generate_export_zip(org_filter=None, sector_filter=None, is_admin=False):
                 if os.path.isfile(fpath) and fname not in zf.namelist():
                     zf.write(fpath, arcname=fname)
     return buf.getvalue()
+
+
+def backup_database():
+    """Create a consistent copy of the SQLite database using SQLite's backup API and return its bytes."""
+    with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as tmp:
+        tmp_path = tmp.name
+
+    try:
+        dest = sqlite3.connect(tmp_path)
+        with get_db() as src:
+            src.backup(dest)
+        dest.close()
+        with open(tmp_path, "rb") as f:
+            data = f.read()
+        return data
+    finally:
+        if os.path.exists(tmp_path):
+            try:
+                os.remove(tmp_path)
+            except OSError:
+                pass
+

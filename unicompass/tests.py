@@ -156,6 +156,64 @@ class UniCompassTestCase(unittest.TestCase):
             with self.client.session_transaction() as sess:
                 self.assertEqual(sess.get("sector"), "Finance")
 
+    def test_pages_render_without_template_errors(self):
+        with self.client:
+            # Login as regular user
+            self.client.post("/login", data={"user": "BE-ACV-Finance", "pincode": "3456"}, follow_redirects=True)
+            for path in ("/home", "/annual-results", "/major-agreements", "/major-companies", "/export"):
+                res = self.client.get(path)
+                self.assertEqual(res.status_code, 200, f"Failed rendering {path} for regular user")
+
+        with self.client:
+            # Login as admin
+            self.client.post("/login", data={"user": "admin@example.com", "pincode": "1234"}, follow_redirects=True)
+            for path in ("/home", "/annual-results", "/major-agreements", "/major-companies", "/export", "/admin"):
+                res = self.client.get(path)
+                self.assertEqual(res.status_code, 200, f"Failed rendering {path} for admin")
+
+    def test_admin_editing_affiliate_preserves_focus(self):
+        with self.client:
+            # Login as admin
+            self.client.post("/login", data={"user": "admin@example.com", "pincode": "1234"}, follow_redirects=True)
+
+            # View annual results as affiliate
+            res = self.client.get("/annual-results?org=UNI-Belgium")
+            self.assertEqual(res.status_code, 200)
+            self.assertIn("Viewing: <strong>UNI-Belgium</strong>", res.get_data(as_text=True))
+
+            # Save annual results for affiliate
+            post_res = self.client.post("/annual-results", data={
+                "org": "UNI-Belgium",
+                "value_collective_bargaining_coverage_2026": "88",
+            }, follow_redirects=False)
+            self.assertEqual(post_res.status_code, 302)
+            self.assertIn("org=UNI-Belgium", post_res.headers.get("Location", ""))
+
+            # Follow redirect and verify focus is preserved
+            follow_res = self.client.get(post_res.headers["Location"])
+            self.assertEqual(follow_res.status_code, 200)
+            self.assertIn("Viewing: <strong>UNI-Belgium</strong>", follow_res.get_data(as_text=True))
+
+            # Save agreements for affiliate
+            ag_post = self.client.post("/major-agreements", data={
+                "org": "UNI-Belgium",
+                "year": "2026",
+                "company_name_0": "Test CLA",
+                "workers_affected_0": "500",
+            }, follow_redirects=False)
+            self.assertEqual(ag_post.status_code, 302)
+            self.assertIn("org=UNI-Belgium", ag_post.headers.get("Location", ""))
+
+            # Save companies for affiliate
+            co_post = self.client.post("/major-companies", data={
+                "org": "UNI-Belgium",
+                "year": "2026",
+                "company_name_0": "Test Company",
+                "workers_0": "1000",
+            }, follow_redirects=False)
+            self.assertEqual(co_post.status_code, 302)
+            self.assertIn("org=UNI-Belgium", co_post.headers.get("Location", ""))
+
     def test_security_users_csv_cannot_be_downloaded(self):
         with self.client:
             self.client.post("/login", data={"user": "BE-ACV-Finance", "pincode": "3456"}, follow_redirects=True)
@@ -167,6 +225,52 @@ class UniCompassTestCase(unittest.TestCase):
             self.assertIn(res3.status_code, [403, 404, 400])
             res4 = self.client.get("/export/download/unicompass.db")
             self.assertIn(res4.status_code, [403, 404])
+
+    def test_admin_download_db_backup(self):
+        with self.client:
+            # 1. Non-admin user is denied
+            self.client.post("/login", data={"user": "BE-ACV-Finance", "pincode": "3456"}, follow_redirects=True)
+            res_user = self.client.get("/admin/download-db")
+            self.assertEqual(res_user.status_code, 302)
+
+            # 2. Admin user receives timestamped database file
+            self.client.post("/login", data={"user": "admin@example.com", "pincode": "1234"}, follow_redirects=True)
+            
+            # Check admin page has download button
+            admin_page = self.client.get("/admin")
+            self.assertEqual(admin_page.status_code, 200)
+            self.assertIn("Download Database (unicompass.db)", admin_page.get_data(as_text=True))
+            self.assertIn("/admin/download-db", admin_page.get_data(as_text=True))
+
+            # Download the DB copy
+            res_admin = self.client.get("/admin/download-db")
+            self.assertEqual(res_admin.status_code, 200)
+            self.assertEqual(res_admin.mimetype, "application/x-sqlite3")
+
+            disposition = res_admin.headers.get("Content-Disposition", "")
+            self.assertIn("unicompass_", disposition)
+            self.assertIn(".db", disposition)
+
+            # Validate that downloaded file is a consistent SQLite database with all tables
+            import tempfile
+            import sqlite3
+            with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as tmp:
+                tmp.write(res_admin.data)
+                tmp_path = tmp.name
+
+            try:
+                conn = sqlite3.connect(tmp_path)
+                cur = conn.cursor()
+                cur.execute("SELECT name FROM sqlite_master WHERE type='table'")
+                tables = [r[0] for r in cur.fetchall()]
+                conn.close()
+                self.assertIn("users", tables)
+                self.assertIn("annual_results", tables)
+                self.assertIn("agreements", tables)
+                self.assertIn("companies", tables)
+            finally:
+                if os.path.exists(tmp_path):
+                    os.remove(tmp_path)
 
 if __name__ == "__main__":
     unittest.main()

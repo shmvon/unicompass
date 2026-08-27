@@ -1,10 +1,22 @@
 {% extends "layout.html" %}
 {% block title %}— Admin{% endblock %}
 {% block content %}
-<div class="page-intro">
-  <p>Completion progress per organisation and sector combination from <code>users.csv</code>.</p>
+<div class="page-intro" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.8rem;">
+  <p style="margin:0;">Completion progress per organisation and sector combination from <code>users.csv</code>.</p>
+  <a href="{{ url_for('admin_download_db') }}"
+     id="download-db-btn"
+     style="display:inline-flex; align-items:center; gap:0.45rem; background:#1a3a5c; color:#fff; padding:0.4rem 0.85rem; border-radius:4px; text-decoration:none; font-size:0.85rem; font-weight:500; transition:background 0.15s; white-space:nowrap;"
+     onmouseover="this.style.background='#122840'" onmouseout="this.style.background='#1a3a5c'"
+     title="Download a timestamped copy of unicompass.db">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+      <polyline points="7 10 12 15 17 10"></polyline>
+      <line x1="12" y1="15" x2="12" y2="3"></line>
+    </svg>
+    Download Database (unicompass.db)
+  </a>
 </div>
-<div class="filter-bar" style="margin-bottom:1rem; display:flex; align-items:center; gap:0.6rem;">
+<div class="filter-bar" style="margin-top:0.8rem; margin-bottom:1rem; display:flex; align-items:center; gap:0.6rem;">
   <label for="year" style="font-weight:600; color:#1a3a5c;">Year:</label>
   <select id="year" onchange="window.location.href='?year='+this.value"
     style="padding:0.3rem 0.6rem; border:1px solid #ccc; border-radius:4px; font-size:0.85rem; background:#fff;">

@@ -245,6 +245,7 @@
               </option>
               <option value="strong decline" {% if qual=='strong decline' %}selected{% endif %}>Strong decline</option>
             </select>
+            {% endif %}
             {% set is_pct = var_key in ['collective_bargaining_coverage', 'avg_pay_increase', 'avg_wage_increase', 'inflation_rate', 'sectoral_productivity'] %}
             {% set is_eur = var_key in ['one_off_lump_sum', 'avg_monthly_wage'] %}
             <input type="text" name="value_{{ var_key }}_{{ y }}" value="{{ val }}" class="cell-num row-{{ var_key }}"
