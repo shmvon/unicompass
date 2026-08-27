@@ -1,20 +1,25 @@
 {% extends "layout.html" %}
 {% block title %}— Login{% endblock %}
 {% block content %}
+{# Login form container #}
 <h1>Login</h1>
 <form method="POST" style="max-width: 360px;">
+  {# Username / Affiliate ID input #}
   <div style="margin-bottom: 0.75rem;">
     <label for="user" style="display:block; margin-bottom:0.25rem; font-size:0.9rem;">Username</label>
     <input type="text" name="user" id="user" required autofocus
-           style="width:100%; padding:0.5rem; border:1px solid #ccc; border-radius:4px;">
+           style="width:100%; padding:0.5rem; border:1px solid #ccc; border-radius:4px; font-size:0.9rem;">
   </div>
+
+  {# 4-digit numeric pincode input #}
   <div style="margin-bottom: 1rem;">
     <label for="pincode" style="display:block; margin-bottom:0.25rem; font-size:0.9rem;">Pincode</label>
     <input type="password" name="pincode" id="pincode" required
-           style="width:100%; padding:0.5rem; border:1px solid #ccc; border-radius:4px;">
+           style="width:100%; padding:0.5rem; border:1px solid #ccc; border-radius:4px; font-size:0.9rem;">
   </div>
-  <button type="submit"
-          style="background:#1a3a5c; color:#fff; border:none; padding:0.5rem 1.5rem; border-radius:4px; cursor:pointer;">
+
+  {# Form submission button #}
+  <button type="submit" class="btn-save">
     Sign in
   </button>
 </form>

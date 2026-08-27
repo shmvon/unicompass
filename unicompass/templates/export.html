@@ -1,59 +1,38 @@
 {% extends "layout.html" %}
 {% block title %}— Export{% endblock %}
 {% block content %}
+{# Admin viewing indicator banner #}
+{% if view_org and view_org != session_org %}
+<p class="viewing-banner">Viewing: <strong>{{ view_org }}</strong></p>
+{% endif %}
+
+{# Page introduction #}
 <div class="page-intro">
-  <p>Download data as CSV (per table) or XLSX (combined workbook). Files are automatically generated and kept up to date.</p>
+  <p>Download data as CSV (per table) or XLSX (combined workbook). Files are automatically generated and
+    kept up to date. You can also generate and download a comprehensive PDF report below.</p>
 </div>
 
-{% if is_admin and db_files %}
-<h2 style="font-size:1.05rem; color:#1a3a5c; margin-top:1rem; margin-bottom:0.5rem;">Full Database (All Affiliates & Sectors)</h2>
-<div class="table-wrap" style="margin-bottom:1.5rem;">
-  <table style="border-collapse:collapse; width:100%; font-size:0.85rem;">
-    <thead>
-      <tr>
-        <th style="text-align:left; padding:0.4rem 0.6rem; border-bottom:2px solid #1a3a5c;">Database Table / Workbook</th>
-        <th style="text-align:right; padding:0.4rem 0.6rem; border-bottom:2px solid #1a3a5c;">Size</th>
-        <th style="text-align:center; padding:0.4rem 0.6rem; border-bottom:2px solid #1a3a5c; width:100px;"></th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for f in db_files %}
-      <tr>
-        <td style="padding:0.4rem 0.6rem; border-bottom:1px solid #ddd; font-weight:500;">{{ f.name }}</td>
-        <td style="padding:0.4rem 0.6rem; border-bottom:1px solid #ddd; text-align:right; color:#666;">{{ f.size }}</td>
-        <td style="padding:0.4rem 0.6rem; border-bottom:1px solid #ddd; text-align:center;">
-          <a href="{{ url_for('export_download', filename=f.name) }}" style="color:#1a3a5c; font-weight:600; text-decoration:underline;">Download</a>
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
-{% endif %}
-
-{% if is_admin %}
-<h2 style="font-size:1.05rem; color:#1a3a5c; margin-top:1rem; margin-bottom:0.5rem;">Affiliate & Sector Exports</h2>
-{% endif %}
-
+{# Export files table listing available CSV and XLSX files #}
 {% if not files %}
 <p style="color:#888;">No export files available for the current selection.</p>
 {% else %}
-<div class="table-wrap" style="margin-bottom:1.2rem;">
-  <table style="border-collapse:collapse; width:100%; font-size:0.85rem;">
+<div class="table-wrap" style="margin-bottom:1.2rem; width:60%; max-width:60%;">
+  <table class="data-table" style="width:100%;">
     <thead>
       <tr>
-        <th style="text-align:left; padding:0.4rem 0.6rem; border-bottom:2px solid #1a3a5c;">File</th>
-        <th style="text-align:right; padding:0.4rem 0.6rem; border-bottom:2px solid #1a3a5c;">Size</th>
-        <th style="text-align:center; padding:0.4rem 0.6rem; border-bottom:2px solid #1a3a5c; width:100px;"></th>
+        <th class="left">File</th>
+        <th class="num" style="width:90px;">Size</th>
+        <th class="center" style="width:100px;"></th>
       </tr>
     </thead>
     <tbody>
       {% for f in files %}
       <tr>
-        <td style="padding:0.4rem 0.6rem; border-bottom:1px solid #ddd;">{{ f.name }}</td>
-        <td style="padding:0.4rem 0.6rem; border-bottom:1px solid #ddd; text-align:right; color:#666;">{{ f.size }}</td>
-        <td style="padding:0.4rem 0.6rem; border-bottom:1px solid #ddd; text-align:center;">
-          <a href="{{ url_for('export_download', filename=f.name) }}" style="color:#1a3a5c; font-weight:600; text-decoration:underline;">Download</a>
+        <td class="left" style="font-weight:500;">{{ f.name }}</td>
+        <td class="num">{{ f.size }}</td>
+        <td class="center">
+          <a href="{{ url_for('export_download', filename=f.name) }}"
+            style="color:#1a3a5c; font-weight:600; text-decoration:underline;">Download</a>
         </td>
       </tr>
       {% endfor %}
@@ -62,9 +41,15 @@
 </div>
 {% endif %}
 
-<p style="margin-top:1rem;">
-  <a href="{{ url_for('export_download_all') }}" style="display:inline-block; background:#1a3a5c; color:#fff; padding:0.45rem 1.2rem; border-radius:4px; text-decoration:none; font-size:0.85rem; font-weight:500;">
-    Download {% if is_admin %}All (Full DB & Affiliates){% else %}Selected Organisation & Sector{% endif %} as ZIP
+{# Main action buttons: download all tables as ZIP or generate PDF report #}
+<div class="actions-bar">
+  <a href="{{ url_for('export_download_all', org=view_org) if is_admin and view_org else url_for('export_download_all') }}" id="download-zip-btn"
+    class="btn-action-primary">
+    Download all tables
   </a>
-</p>
+  <a href="{{ url_for('export_pdf', org=view_org) if is_admin and view_org else url_for('export_pdf') }}" id="generate-pdf-btn"
+    class="btn-action-success">
+    Generate PDF Report
+  </a>
+</div>
 {% endblock %}

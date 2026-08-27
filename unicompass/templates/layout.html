@@ -265,6 +265,32 @@
       background: #eef3f8;
     }
 
+    .remove-row-btn {
+      font-size: 0.8rem;
+      cursor: pointer;
+      color: #b91c1c;
+      border: 1px dashed #b91c1c;
+      border-radius: 3px;
+      padding: 2px 10px;
+      background: #fff;
+      margin-top: 4px;
+      margin-left: 6px;
+      display: inline-block;
+      transition: background 0.15s;
+    }
+
+    .remove-row-btn:hover {
+      background: #fef2f2;
+    }
+
+    .select-level {
+      width: 75px !important;
+      max-width: 75px;
+      text-overflow: ellipsis;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+
     [data-cmt] {
       position: relative;
       cursor: help;
@@ -632,7 +658,7 @@
       width: 48px;
       height: 6px;
       border-radius: 3px;
-      background: linear-gradient(to right, rgba(37, 99, 235, 0.35), rgba(250, 204, 21, 0.45));
+      background: linear-gradient(to right, rgba(37, 99, 235, 0.35), rgba(249, 115, 22, 0.45));
     }
 
     .heatmap-swatch-high {
@@ -640,8 +666,8 @@
       width: 14px;
       height: 14px;
       border-radius: 2px;
-      background: rgba(250, 204, 21, 0.45);
-      border: 1px solid rgba(250, 204, 21, 0.6);
+      background: rgba(249, 115, 22, 0.45);
+      border: 1px solid rgba(249, 115, 22, 0.6);
     }
 
     .heatmap-label {
@@ -698,33 +724,28 @@
       padding: 0.25rem 0.6rem;
       font-size: 0.75rem;
       border-radius: 4px;
-      border: 1px solid #e0e0e0;
-      background: #f7f9fa;
-      color: #888;
+      border: 1px solid #1a3a5c;
+      background: #eef4fa;
+      color: #1a3a5c;
+      font-weight: 500;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       white-space: nowrap;
       margin: 2px auto;
-      cursor: default;
+      cursor: pointer;
       transition: all 0.15s ease-in-out;
       text-decoration: none;
     }
 
-    .report-btn.active-editing {
-      border-color: #1a3a5c;
-      background: #eef4fa;
-      color: #1a3a5c;
-      font-weight: 500;
-      cursor: pointer;
-    }
-
+    .report-btn:hover,
     .report-btn.active-editing:hover {
       background: #1a3a5c;
       color: #ffffff;
       box-shadow: 0 1px 4px rgba(26, 58, 92, 0.3);
     }
 
+    .report-btn:hover span,
     .report-btn.active-editing:hover span {
       color: #ffffff !important;
     }
@@ -762,6 +783,173 @@
     .link-back:hover {
       text-decoration: underline;
     }
+
+    /* Standard Data Tables & Cells */
+    .data-table {
+      border-collapse: collapse;
+      width: 100%;
+      font-size: 0.85rem;
+      border: none;
+    }
+
+    .data-table th,
+    .tbl-header {
+      text-align: center;
+      padding: 0.4rem 0.5rem;
+      border-bottom: 2px solid #1a3a5c;
+      color: #1a3a5c;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .data-table th.left,
+    .tbl-header.left {
+      text-align: left;
+    }
+
+    .data-table th.center {
+      text-align: center;
+    }
+
+    .data-table th.right,
+    .data-table th.num,
+    .tbl-header.right {
+      text-align: right;
+    }
+
+    .data-table td,
+    .tbl-cell {
+      padding: 0.3rem 0.4rem;
+      border-bottom: 1px solid #ddd;
+      text-align: center;
+      vertical-align: middle;
+    }
+
+    .data-table td.left,
+    .tbl-cell.left {
+      text-align: left;
+    }
+
+    .data-table td.center,
+    .tbl-cell.center {
+      text-align: center;
+    }
+
+    .data-table td.right,
+    .tbl-cell.right {
+      text-align: right;
+    }
+
+    .data-table td.num {
+      text-align: right;
+      color: #666;
+    }
+
+    .data-table td.num-muted,
+    .tbl-cell.num-muted {
+      text-align: center;
+      color: #888;
+    }
+
+    /* Action Buttons & Button Bars */
+    .btn-action-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      background: #1a3a5c;
+      color: #fff;
+      padding: 0.45rem 1.2rem;
+      border-radius: 4px;
+      text-decoration: none;
+      font-size: 0.85rem;
+      font-weight: 500;
+      border: none;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .btn-action-primary:hover {
+      background: #244d75;
+      text-decoration: none;
+      color: #fff;
+    }
+
+    .btn-action-success {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      background: #28a745;
+      color: #fff;
+      padding: 0.45rem 1.2rem;
+      border-radius: 4px;
+      text-decoration: none;
+      font-size: 0.85rem;
+      font-weight: 500;
+      border: none;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .btn-action-success:hover {
+      background: #218838;
+      text-decoration: none;
+      color: #fff;
+    }
+
+    .btn-download-sm {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      background: #1a3a5c;
+      color: #fff;
+      padding: 0.35rem 0.7rem;
+      border-radius: 4px;
+      text-decoration: none;
+      font-size: 0.82rem;
+      font-weight: 500;
+      white-space: nowrap;
+      transition: background 0.15s;
+    }
+
+    .btn-download-sm:hover {
+      background: #122840;
+      text-decoration: none;
+      color: #fff;
+    }
+
+    .actions-bar {
+      margin-top: 1.2rem;
+      display: flex;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .section-heading {
+      font-size: 1.05rem;
+      color: #1a3a5c;
+      margin-top: 1.5rem;
+      margin-bottom: 0.6rem;
+      font-weight: 600;
+    }
+
+    /* Common Cell Form Inputs */
+    .input-cell {
+      padding: 0.25rem;
+      border: 1px solid #ccc;
+      border-radius: 3px;
+      font-size: 0.8rem;
+      box-sizing: border-box;
+    }
+
+    .input-cell-center {
+      padding: 0.25rem;
+      border: 1px solid #ccc;
+      border-radius: 3px;
+      font-size: 0.8rem;
+      text-align: center;
+      box-sizing: border-box;
+    }
   </style>
 </head>
 
@@ -786,6 +974,9 @@
       <a href="{{ admin_href }}" {% if current_page==url_for('admin') %}class="active-tab" {% endif %}
         style="font-weight:600;">Admin</a>
       {% endif %}
+      <span id="autosave-indicator" style="display:inline-flex; align-items:center; gap:4px; font-size:0.75rem; color:#4ade80; opacity:0; transition:opacity 0.25s ease; font-weight:500; margin-left:0.3rem; vertical-align:middle;">
+        <span style="font-size:0.6rem;">●</span> <span id="autosave-text">Saved</span>
+      </span>
     </div>
     <div class="user-info" style="display:flex; align-items:center; gap:0.6rem;">
       {% if current_user %}
@@ -980,6 +1171,9 @@
         }
       }
       closePopup();
+      if (typeof autoSaveCurrentForm === 'function') {
+        autoSaveCurrentForm();
+      }
     }
 
     document.getElementById('popupBackdrop').addEventListener('click', function (e) {
@@ -1014,6 +1208,108 @@
       if (!el) return;
       el.value = el.value.replace(/\D/g, '');
     }
+
+    /* Auto-save engine across all pages */
+    var _autosaveTimer = null;
+    var _isAutosaving = false;
+    var _hasUnsavedChanges = false;
+
+    function markFormDirty() {
+      _hasUnsavedChanges = true;
+    }
+
+    function autoSaveCurrentForm(callback) {
+      var form = document.querySelector('form[method="POST"]');
+      if (!form) {
+        if (callback) callback();
+        return;
+      }
+
+      if (_autosaveTimer) {
+        clearTimeout(_autosaveTimer);
+        _autosaveTimer = null;
+      }
+
+      var indicator = document.getElementById('autosave-indicator');
+      var textEl = document.getElementById('autosave-text');
+      if (indicator && textEl) {
+        textEl.textContent = 'Saving...';
+        indicator.style.color = 'rgba(255,255,255,0.85)';
+        indicator.style.opacity = '1';
+      }
+
+      _isAutosaving = true;
+      var formData = new FormData(form);
+      var postUrl = form.action || window.location.href;
+
+      fetch(postUrl, {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          'Accept': 'application/json'
+        }
+      }).then(function (res) {
+        _isAutosaving = false;
+        _hasUnsavedChanges = false;
+        if (indicator && textEl) {
+          textEl.textContent = 'Saved';
+          indicator.style.color = '#4ade80';
+          indicator.style.opacity = '1';
+          setTimeout(function () {
+            if (!_hasUnsavedChanges && !_isAutosaving) {
+              indicator.style.opacity = '0';
+            }
+          }, 2000);
+        }
+        if (callback) callback();
+      }).catch(function (err) {
+        _isAutosaving = false;
+        if (indicator && textEl) {
+          textEl.textContent = 'Save error';
+          indicator.style.color = '#f87171';
+          indicator.style.opacity = '1';
+        }
+        if (callback) callback();
+      });
+    }
+
+    function debounceAutoSave() {
+      markFormDirty();
+      if (_autosaveTimer) clearTimeout(_autosaveTimer);
+      _autosaveTimer = setTimeout(function () {
+        autoSaveCurrentForm();
+      }, 1200);
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+      var form = document.querySelector('form[method="POST"]');
+      if (!form) return;
+
+      form.addEventListener('change', function (e) {
+        markFormDirty();
+        autoSaveCurrentForm();
+      });
+
+      form.addEventListener('input', function (e) {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+          debounceAutoSave();
+        }
+      });
+
+      document.querySelectorAll('a[href]').forEach(function (link) {
+        var href = link.getAttribute('href');
+        if (!href || href.startsWith('#') || href.startsWith('javascript:')) return;
+        link.addEventListener('click', function (e) {
+          if (_hasUnsavedChanges) {
+            e.preventDefault();
+            autoSaveCurrentForm(function () {
+              window.location.href = href;
+            });
+          }
+        });
+      });
+    });
   </script>
 </body>
 

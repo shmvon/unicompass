@@ -67,7 +67,7 @@ class UniCompassTestCase(unittest.TestCase):
         self.assertEqual(res2[("bargaining_climate", year)]["qual_value"], "very unfavourable")
         self.assertEqual(res2[("bargaining_climate", year)]["comment"], "Tough year")
 
-    def test_likert_heatmap_colors_blue_to_yellow(self):
+    def test_likert_heatmap_colors_blue_to_orange(self):
         saved = {
             ("bargaining_climate", 2024): {"qual_value": "very favourable", "value": ""},
             ("bargaining_climate", 2025): {"qual_value": "neutral", "value": ""},
@@ -76,15 +76,15 @@ class UniCompassTestCase(unittest.TestCase):
             ("avg_pay_increase", 2025): {"value": "4.0", "qual_value": ""},
         }
         colormap = compute_cell_colors(saved, ANNUAL_VARIABLES, [2024, 2025, 2026])
-        # Very favourable -> High / Yellow (250, 204, 21)
-        self.assertIn("rgba(250, 204, 21", colormap[("bargaining_climate", 2024)])
-        # Neutral -> Interval 3 (132, 204, 22)
-        self.assertIn("rgba(132, 204, 22", colormap[("bargaining_climate", 2025)])
+        # Very favourable -> High / Orange (249, 115, 22)
+        self.assertIn("rgba(249, 115, 22", colormap[("bargaining_climate", 2024)])
+        # Neutral -> Slate (148, 163, 184)
+        self.assertIn("rgba(148, 163, 184", colormap[("bargaining_climate", 2025)])
         # Very unfavourable -> Low / Blue (37, 99, 235)
         self.assertIn("rgba(37, 99, 235", colormap[("bargaining_climate", 2026)])
-        # Numeric min (Blue) and max (Yellow)
+        # Numeric min (Blue) and max (Orange)
         self.assertIn("37", colormap[("avg_pay_increase", 2024)])
-        self.assertIn("250", colormap[("avg_pay_increase", 2025)])
+        self.assertIn("249", colormap[("avg_pay_increase", 2025)])
 
     def test_home_page_progress_bars_and_topbar(self):
         with self.client:
@@ -139,14 +139,15 @@ class UniCompassTestCase(unittest.TestCase):
             self.assertEqual(res_forbid.status_code, 403)
 
         with self.client:
-            # Admin export view
+            # Admin export view (shows scoped files matching active view_org/sector, same as viewing users)
             self.client.post("/login", data={"user": "admin@example.com", "pincode": "1234"}, follow_redirects=True)
-            res_admin = self.client.get("/export")
+            res_admin = self.client.get("/export?org=UNI-Belgium&sector=Finance")
             self.assertEqual(res_admin.status_code, 200)
             html_admin = res_admin.get_data(as_text=True)
-            self.assertIn("Full Database (All Affiliates & Sectors)", html_admin)
-            self.assertIn("unicompass.xlsx", html_admin)
-            self.assertIn("annual_results.csv", html_admin)
+            self.assertIn("Viewing: <strong>UNI-Belgium</strong>", html_admin)
+            self.assertIn("UNI-Belgium_Finance_annual_results.csv", html_admin)
+            self.assertIn("Download all tables", html_admin)
+            self.assertIn("Generate PDF Report", html_admin)
 
     def test_set_sector_switching(self):
         with self.client:
@@ -228,34 +229,40 @@ class UniCompassTestCase(unittest.TestCase):
 
     def test_admin_download_db_backup(self):
         with self.client:
-            # 1. Non-admin user is denied
+            # 1. Non-admin user is denied all 4 download routes
             self.client.post("/login", data={"user": "BE-ACV-Finance", "pincode": "3456"}, follow_redirects=True)
-            res_user = self.client.get("/admin/download-db")
-            self.assertEqual(res_user.status_code, 302)
+            for path in ("/admin/download-db", "/admin/download-csv", "/admin/download-xlsx", "/admin/download-zip"):
+                res_user = self.client.get(path)
+                self.assertEqual(res_user.status_code, 302)
 
-            # 2. Admin user receives timestamped database file
+            # 2. Admin user receives timestamped database files (.db, .csv, .xlsx, .zip)
             self.client.post("/login", data={"user": "admin@example.com", "pincode": "1234"}, follow_redirects=True)
             
-            # Check admin page has download button
+            # Check admin page has all 4 download buttons
             admin_page = self.client.get("/admin")
             self.assertEqual(admin_page.status_code, 200)
-            self.assertIn("Download Database (unicompass.db)", admin_page.get_data(as_text=True))
-            self.assertIn("/admin/download-db", admin_page.get_data(as_text=True))
+            admin_html = admin_page.get_data(as_text=True)
+            self.assertIn("Download .db", admin_html)
+            self.assertIn("Download .csv", admin_html)
+            self.assertIn("Download .xlsx", admin_html)
+            self.assertIn("Download all tables (.zip)", admin_html)
+            self.assertIn("/admin/download-db", admin_html)
+            self.assertIn("/admin/download-csv", admin_html)
+            self.assertIn("/admin/download-xlsx", admin_html)
+            self.assertIn("/admin/download-zip", admin_html)
 
-            # Download the DB copy
-            res_admin = self.client.get("/admin/download-db")
-            self.assertEqual(res_admin.status_code, 200)
-            self.assertEqual(res_admin.mimetype, "application/x-sqlite3")
+            # Download the DB copy (.db)
+            res_db = self.client.get("/admin/download-db")
+            self.assertEqual(res_db.status_code, 200)
+            self.assertEqual(res_db.mimetype, "application/x-sqlite3")
+            self.assertIn("unicompass_", res_db.headers.get("Content-Disposition", ""))
+            self.assertIn(".db", res_db.headers.get("Content-Disposition", ""))
 
-            disposition = res_admin.headers.get("Content-Disposition", "")
-            self.assertIn("unicompass_", disposition)
-            self.assertIn(".db", disposition)
-
-            # Validate that downloaded file is a consistent SQLite database with all tables
+            # Validate SQLite database integrity
             import tempfile
             import sqlite3
             with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as tmp:
-                tmp.write(res_admin.data)
+                tmp.write(res_db.data)
                 tmp_path = tmp.name
 
             try:
@@ -272,5 +279,208 @@ class UniCompassTestCase(unittest.TestCase):
                 if os.path.exists(tmp_path):
                     os.remove(tmp_path)
 
+            # Download the CSV ZIP (.zip)
+            res_csv = self.client.get("/admin/download-csv")
+            self.assertEqual(res_csv.status_code, 200)
+            self.assertEqual(res_csv.mimetype, "application/zip")
+            self.assertIn("unicompass_csv_", res_csv.headers.get("Content-Disposition", ""))
+            self.assertIn(".zip", res_csv.headers.get("Content-Disposition", ""))
+            
+            from zipfile import ZipFile
+            from io import BytesIO
+            with ZipFile(BytesIO(res_csv.data), "r") as zf:
+                names = zf.namelist()
+                self.assertIn("annual_results.csv", names)
+                self.assertIn("agreements.csv", names)
+                self.assertIn("companies.csv", names)
+                self.assertIn("users.csv", names)
+
+            # Download the Excel workbook (.xlsx)
+            res_xlsx = self.client.get("/admin/download-xlsx")
+            self.assertEqual(res_xlsx.status_code, 200)
+            self.assertEqual(res_xlsx.mimetype, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            self.assertIn("unicompass_", res_xlsx.headers.get("Content-Disposition", ""))
+            self.assertIn(".xlsx", res_xlsx.headers.get("Content-Disposition", ""))
+            
+            from openpyxl import load_workbook
+            wb = load_workbook(BytesIO(res_xlsx.data))
+            self.assertIn("annual_results", wb.sheetnames)
+            self.assertIn("agreements", wb.sheetnames)
+            self.assertIn("companies", wb.sheetnames)
+            self.assertIn("users", wb.sheetnames)
+
+            # Download the all tables ZIP (.zip)
+            res_all_zip = self.client.get("/admin/download-zip")
+            self.assertEqual(res_all_zip.status_code, 200)
+            self.assertEqual(res_all_zip.mimetype, "application/zip")
+            self.assertIn("unicompass_all_tables_", res_all_zip.headers.get("Content-Disposition", ""))
+            self.assertIn(".zip", res_all_zip.headers.get("Content-Disposition", ""))
+
+            with ZipFile(BytesIO(res_all_zip.data), "r") as zf:
+                all_names = zf.namelist()
+                self.assertIn("annual_results.csv", all_names)
+                self.assertIn("unicompass.xlsx", all_names)
+                self.assertTrue(any("UNI-Belgium" in name for name in all_names))
+
+    def test_admin_viewing_affiliate_progress_consistency(self):
+        with self.client:
+            # Login as admin
+            self.client.post("/login", data={"user": "admin@example.com", "pincode": "1234"}, follow_redirects=True)
+            
+            # Switch to UNI-Turkey and Commerce
+            res = self.client.get("/home?org=UNI-Turkey", follow_redirects=True)
+            self.assertEqual(res.status_code, 200)
+            self.assertIn("Viewing: <strong>UNI-Turkey</strong>", res.get_data(as_text=True))
+            
+            # Progress table should compute for UNI-Turkey (0 completed), not UNI Europe
+            res_turkey_home = self.client.get("/home")
+            self.assertEqual(res_turkey_home.status_code, 200)
+            self.assertIn("Viewing: <strong>UNI-Turkey</strong>", res_turkey_home.get_data(as_text=True))
+
+    def test_pdf_report_generation_and_export(self):
+        # 1. Direct model PDF generation
+        from models import generate_pdf_report, save_agreements, save_companies
+        
+        # Save agreement and company with multi-line comment & other_changes
+        save_agreements("UNI-Belgium", 2026, [
+            {
+                "company_name": "BelgBank SA",
+                "level": "Single-employer",
+                "date_of_agreement": "2026-06",
+                "duration": "2 years",
+                "workers_affected": 4200,
+                "wage_increase": "4.2%",
+                "one_off_lump_sum": "500 €",
+                "other_changes": "Training & working time\nDetailed breakdown: 35h week and 5 days training.",
+                "comment": "Major breakthrough\nNegotiations lasted 6 months but settled amicably."
+            }
+        ], sector="Finance")
+        
+        save_companies("UNI-Belgium", 2026, [
+            {
+                "company_name": "BelgBank SA",
+                "workers": 4500,
+                "mnc": "Yes",
+                "agreement": "Yes",
+                "number_of_unions": 3,
+                "union_density": "75-89%",
+                "worker_representation": "Yes",
+                "ewc_presence": "Yes",
+                "comment": "Strong union presence\nWorks council meets bi-monthly."
+            }
+        ], sector="Finance")
+
+        pdf_bytes = generate_pdf_report(organisation="UNI-Belgium", sector="Finance")
+        self.assertTrue(pdf_bytes.startswith(b"%PDF-"))
+        self.assertGreater(len(pdf_bytes), 1000)
+
+        # 2. Regular user endpoint access
+        with self.client:
+            self.client.post("/login", data={"user": "BE-ACV-Finance", "pincode": "3456"}, follow_redirects=True)
+            
+            # Export page loads and lists files (PDF is excluded from table, accessed via button)
+            res_export = self.client.get("/export")
+            self.assertEqual(res_export.status_code, 200)
+            self.assertIn("Generate PDF Report", res_export.get_data(as_text=True))
+            self.assertIn("UNI-Belgium_Finance_annual_results.csv", res_export.get_data(as_text=True))
+            self.assertNotIn("UNI-Belgium_Finance_report.pdf", res_export.get_data(as_text=True))
+
+            # Direct PDF generation endpoint
+            res_pdf = self.client.get("/export/pdf")
+            self.assertEqual(res_pdf.status_code, 200)
+            self.assertEqual(res_pdf.mimetype, "application/pdf")
+            self.assertIn("UNI-Belgium_Finance_report.pdf", res_pdf.headers.get("Content-Disposition", ""))
+            self.assertTrue(res_pdf.data.startswith(b"%PDF-"))
+            res_pdf.close()
+
+            # Download pre-generated PDF file
+            res_dl = self.client.get("/export/download/UNI-Belgium_Finance_report.pdf")
+            self.assertEqual(res_dl.status_code, 200)
+            self.assertTrue(res_dl.data.startswith(b"%PDF-"))
+            res_dl.close()
+
+            # Cannot download other affiliate's PDF
+            res_forbidden = self.client.get("/export/download/UNI-Turkey_Commerce_report.pdf")
+            self.assertEqual(res_forbidden.status_code, 403)
+            res_forbidden.close()
+
+        # 3. Admin PDF generation endpoint
+        with self.client:
+            self.client.post("/login", data={"user": "admin@example.com", "pincode": "1234"}, follow_redirects=True)
+            res_admin_pdf = self.client.get("/export/pdf?org=UNI-Turkey&sector=Commerce")
+            self.assertEqual(res_admin_pdf.status_code, 200)
+            self.assertEqual(res_admin_pdf.mimetype, "application/pdf")
+            self.assertIn("UNI-Turkey_Commerce_report.pdf", res_admin_pdf.headers.get("Content-Disposition", ""))
+            self.assertTrue(res_admin_pdf.data.startswith(b"%PDF-"))
+            res_admin_pdf.close()
+
+            # Download all zip should contain PDF reports
+            res_zip = self.client.get("/export/download-all")
+            self.assertEqual(res_zip.status_code, 200)
+            from zipfile import ZipFile
+            from io import BytesIO
+            with ZipFile(BytesIO(res_zip.data), "r") as zf:
+                pdf_entries = [name for name in zf.namelist() if name.endswith(".pdf")]
+                self.assertGreater(len(pdf_entries), 0)
+            res_zip.close()
+
+    def test_autosave_ajax_and_title_content_separation(self):
+        with self.client:
+            self.client.post("/login", data={"user": "BE-ACV-Finance", "pincode": "3456"}, follow_redirects=True)
+
+            # 1. AJAX auto-save on Annual results with distinct title and content
+            res_ann = self.client.post(
+                "/annual-results",
+                data={
+                    "value_bargaining_climate_2026": "",
+                    "qual_bargaining_climate_2026": "rather favourable",
+                    "title_outcome_reporting_2026": "Pensions and wage framework",
+                    "content_outcome_reporting_2026": "A breakthrough was reached after multi-month tripartite discussions.",
+                },
+                headers={"X-Requested-With": "XMLHttpRequest"}
+            )
+            self.assertEqual(res_ann.status_code, 200)
+            self.assertEqual(res_ann.json.get("status"), "ok")
+
+            # Verify in GET request that title and content are distinct
+            res_get = self.client.get("/annual-results")
+            html = res_get.get_data(as_text=True)
+            self.assertIn('value="Pensions and wage framework"', html)
+            self.assertIn('A breakthrough was reached after multi-month tripartite discussions.', html)
+
+            # 2. AJAX auto-save on Major agreements
+            res_agr = self.client.post(
+                "/major-agreements",
+                data={
+                    "year": "2026",
+                    "company_name_0": "FinanceCorp SA",
+                    "workers_affected_0": "3200",
+                    "wage_increase_0": "3.8%",
+                    "comment_title_0": "Stable deal",
+                    "comment_content_0": "Concluded with high union satisfaction.",
+                },
+                headers={"X-Requested-With": "XMLHttpRequest"}
+            )
+            self.assertEqual(res_agr.status_code, 200)
+            self.assertEqual(res_agr.json.get("status"), "ok")
+
+            # 3. AJAX auto-save on Major companies
+            res_comp = self.client.post(
+                "/major-companies",
+                data={
+                    "year": "2026",
+                    "company_name_0": "GlobalBank Ltd",
+                    "workers_0": "5000",
+                    "comment_title_0": "EWC meeting scheduled",
+                    "comment_content_0": "Annual plenary scheduled for November.",
+                },
+                headers={"X-Requested-With": "XMLHttpRequest"}
+            )
+            self.assertEqual(res_comp.status_code, 200)
+            self.assertEqual(res_comp.json.get("status"), "ok")
+
+
 if __name__ == "__main__":
     unittest.main()
+
+

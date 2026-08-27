@@ -1,18 +1,23 @@
 {% extends "layout.html" %}
 {% block title %}— Major Agreements{% endblock %}
 {% block content %}
+{# Admin viewing indicator banner #}
 {% if view_org and view_org != session_org %}
 <p class="viewing-banner">Viewing: <strong>{{ view_org }}</strong></p>
 {% endif %}
 
+{# Page introduction #}
 <div class="page-intro">
   <p>Provide data from the most important agreements your organisation has concluded within this sector. Add up to 10
     entries with a reference to the name of the companies involved or the sectoral branch. Entries are auto-sorted by
     workers affected.</p>
 </div>
 
+{# Major agreements entry form #}
 <form method="POST">
   {% if view_org %}<input type="hidden" name="org" value="{{ view_org }}">{% endif %}
+  
+  {# Year selector dropdown #}
   <div class="filter-bar">
     <label for="year">Year:</label>
     <select name="year" id="year" onchange="this.form.submit()">
@@ -22,89 +27,94 @@
     </select>
     <noscript><button type="submit" style="margin-left:0.5rem;">Go</button></noscript>
   </div>
+
   {% set initial_rows = 5 %}
-  {% set saved_len = saved|length %}
+
+  {# Data entry table for up to 10 agreements #}
   <div class="table-wrap fixed-rows">
-    <table style="font-size:0.85rem;">
+    <table class="data-table" style="border-collapse:collapse; width:100%; font-size:0.85rem; border:none;">
       <colgroup>
-        <col style="width:3rem; min-width:3rem;">
-        <col style="width:12rem; min-width:12rem;">
-        <col style="min-width:90px;">
-        <col style="min-width:90px;">
-        <col style="min-width:80px;">
-        <col style="min-width:80px;">
-        <col style="min-width:80px;">
-        <col style="min-width:80px;">
-        <col style="min-width:150px;">
-        <col style="min-width:150px;">
+        <col style="width:2.5rem; min-width:2.5rem;">
+        <col style="width:145px; min-width:145px;">
+        <col style="width:75px; min-width:75px;">
+        <col style="width:80px; min-width:80px;">
+        <col style="width:80px; min-width:80px;">
+        <col style="width:70px; min-width:70px;">
+        <col style="width:70px; min-width:70px;">
+        <col style="width:70px; min-width:70px;">
+        <col style="width:130px; min-width:130px;">
+        <col style="width:130px; min-width:130px;">
       </colgroup>
       <thead>
         <tr>
-          <th class="sticky-col-1" style="text-align:center; border-bottom:2px solid #1a3a5c;">#</th>
-          <th class="sticky-col-2" style="text-align:left; border-bottom:2px solid #1a3a5c;">Reference</th>
-          <th style="text-align:center; border-bottom:2px solid #1a3a5c;">
+          <th class="sticky-col-1 tbl-header">#</th>
+          <th class="sticky-col-2 tbl-header left" style="text-align:left;">Reference</th>
+          <th class="tbl-header">
             <span class="var-def"
               data-def="Collective bargaining level (entire sector, multi-employer or single-employer).">Level</span>
           </th>
-          <th style="text-align:center; border-bottom:2px solid #1a3a5c;">
+          <th class="tbl-header">
             <span class="var-def" data-def="The date when the agreement was concluded (YYYY-MM).">Date</span>
           </th>
-          <th style="text-align:center; border-bottom:2px solid #1a3a5c;">
+          <th class="tbl-header">
             <span class="var-def" data-def="Duration of the collective agreement.">Duration</span>
           </th>
-          <th style="text-align:center; border-bottom:2px solid #1a3a5c;">
+          <th class="tbl-header">
             <span class="var-def" data-def="Number of workers covered by the agreement.">Workers</span>
           </th>
-          <th style="text-align:center; border-bottom:2px solid #1a3a5c;">
+          <th class="tbl-header">
             <span class="var-def"
               data-def="Average nominal collectively agreed wage increase for the average worker (percentage). Include the basic gross wage rate and regular extra pay (e.g. shift bonuses). Do not include one-off payments. In case of multi-year agreements, report the staged increase or annual average increase.">Pay
               increase</span>
           </th>
-          <th style="text-align:center; border-bottom:2px solid #1a3a5c;">
+          <th class="tbl-header">
             <span class="var-def"
               data-def="Non-permanent benefits paid on top of the increase in pay, e.g. profit sharing, efficiency bonuses, etc. (estimated gross value in euro over the year).">Lump
               sum</span>
           </th>
-          <th style="text-align:center; border-bottom:2px solid #1a3a5c;">
+          <th class="tbl-header">
             <span class="var-def"
               data-def="Any other relevant aspects of the collective agreement, including working time. Max 40 words.">Other
               aspects</span>
           </th>
-          <th style="text-align:center; border-bottom:2px solid #1a3a5c;">
+          <th class="tbl-header">
             <span class="var-def" data-def="Comments. Max. 20 words.">Comments</span>
           </th>
         </tr>
       </thead>
       <tbody>
+        {# Loop through up to 10 agreement slots #}
         {% for i in range(10) %}
-        {% set row = saved[i] if i < saved|length else {} %} <tr class="agreement-row" {% if i>= initial_rows
-          %}style="display:none;"{% endif %}>
-          <td class="sticky-col-1" style="color:#888; text-align:center; border-bottom:1px solid #ddd;">{{ i + 1 }}</td>
-          <td class="sticky-col-2" style="border-bottom:1px solid #ddd;">
+        {% set row = saved[i] if i < saved|length else {} %}
+        <tr class="agreement-row" {% if i>= initial_rows %}style="display:none;"{% endif %}>
+          {# Row index #}
+          <td class="sticky-col-1 tbl-cell num-muted">{{ i + 1 }}</td>
+
+          {# Company or sectoral reference name #}
+          <td class="sticky-col-2 tbl-cell left" style="text-align:left;">
             <input type="text" name="company_name_{{ i }}" value="{{ row.get('company_name', '') }}"
-              style="width:140px; padding:0.25rem; border:1px solid #ccc; border-radius:3px; font-size:0.8rem;"
-              placeholder="Employer(s) or sector" maxlength="200">
+              class="input-cell" style="width:100%; box-sizing:border-box;" placeholder="Employer(s) or sector" maxlength="200">
           </td>
-          <td style="text-align:center; border-bottom:1px solid #ddd;">
-            <select name="level_{{ i }}"
-              style="padding:0.25rem; border:1px solid #ccc; border-radius:3px; font-size:0.8rem;">
+
+          {# Bargaining level select #}
+          <td class="tbl-cell center">
+            <select name="level_{{ i }}" class="input-cell select-level">
               <option value="">—</option>
-              <option value="entire sector" {% if row.get('level')=='entire sector' %}selected{% endif %}>Entire sector
-              </option>
-              <option value="multi-employer" {% if row.get('level')=='multi-employer' %}selected{% endif %}>
-                Multi-employer</option>
-              <option value="single-employer" {% if row.get('level')=='single-employer' %}selected{% endif %}>
-                Single-employer</option>
+              <option value="entire sector" {% if row.get('level')=='entire sector' %}selected{% endif %}>Entire sector</option>
+              <option value="multi-employer" {% if row.get('level')=='multi-employer' %}selected{% endif %}>Multi-employer</option>
+              <option value="single-employer" {% if row.get('level')=='single-employer' %}selected{% endif %}>Single-employer</option>
             </select>
           </td>
-          <td style="text-align:center; border-bottom:1px solid #ddd;">
+
+          {# Date of agreement (YYYY-MM) #}
+          <td class="tbl-cell center">
             <input type="text" name="date_of_agreement_{{ i }}" value="{{ row.get('date_of_agreement', '') }}"
-              style="width:80px; padding:0.25rem; border:1px solid #ccc; border-radius:3px; text-align:center; font-size:0.8rem;"
-              maxlength="20" placeholder="YYYY-MM">
+              class="input-cell-center" style="width:80px;" maxlength="20" placeholder="YYYY-MM">
           </td>
-          <td style="text-align:center; border-bottom:1px solid #ddd;">
-            <select name="duration_{{ i }}"
-              style="padding:0.25rem; border:1px solid #ccc; border-radius:3px; font-size:0.8rem;">
+
+          {# Duration of agreement #}
+          <td class="tbl-cell center">
+            <select name="duration_{{ i }}" class="input-cell">
               <option value="">—</option>
               <option value="1 year" {% if row.get('duration')=='1 year' %}selected{% endif %}>1 year</option>
               <option value="2 years" {% if row.get('duration')=='2 years' %}selected{% endif %}>2 years</option>
@@ -112,33 +122,37 @@
               <option value="+5 years" {% if row.get('duration')=='+5 years' %}selected{% endif %}>+5 years</option>
             </select>
           </td>
-          <td style="text-align:center; border-bottom:1px solid #ddd;">
-            <input type="text" name="workers_affected_{{ i }}" value="{{ row.get('workers_affected', '') }}"
-              style="width:70px; padding:0.25rem; border:1px solid #ccc; border-radius:3px; text-align:center; font-size:0.8rem;"
-              placeholder="#" maxlength="20" oninput="validateIntegerInput(this)">
+
+          {# Number of workers affected #}
+          <td class="tbl-cell center">
+            <input type="text" name="workers_affected_{{ i }}"
+              value="{{ row.get('workers_affected', '') if row.get('workers_affected') and row.get('workers_affected') != 0 else '' }}"
+              class="input-cell-center" style="width:70px;" placeholder="#" maxlength="20" oninput="validateIntegerInput(this)">
           </td>
-          <td style="text-align:center; border-bottom:1px solid #ddd;">
+
+          {# Percentage pay increase #}
+          <td class="tbl-cell center">
             <input type="text" name="wage_increase_{{ i }}" value="{{ row.get('wage_increase', '') }}"
-              style="width:70px; padding:0.25rem; border:1px solid #ccc; border-radius:3px; text-align:center; font-size:0.8rem;"
-              placeholder="%" maxlength="20" oninput="validatePercentInput(this)">
+              class="input-cell-center" style="width:70px;" placeholder="%" maxlength="20" oninput="validatePercentInput(this)">
           </td>
-          <td style="text-align:center; border-bottom:1px solid #ddd;">
+
+          {# One-off lump sum amount #}
+          <td class="tbl-cell center">
             <input type="text" name="one_off_lump_sum_{{ i }}" value="{{ row.get('one_off_lump_sum', '') }}"
-              style="width:70px; padding:0.25rem; border:1px solid #ccc; border-radius:3px; text-align:center; font-size:0.8rem;"
-              placeholder="€" maxlength="20" oninput="validateIntegerInput(this)">
+              class="input-cell-center" style="width:70px;" placeholder="€" maxlength="20" oninput="validateIntegerInput(this)">
           </td>
+
+          {# Other aspects modal popup trigger #}
           {% set _oc_raw = row.get('other_changes', '') %}
           {% set _oc_parts = _oc_raw.split('\n', 1) if _oc_raw else [] %}
           {% set _oc_title = _oc_parts[0] if _oc_parts|length > 1 else '' %}
-          {% set _oc_content = _oc_parts[1] if _oc_parts|length > 1 else (_oc_parts[0] if _oc_parts|length == 1 else '')
-          %}
+          {% set _oc_content = _oc_parts[1] if _oc_parts|length > 1 else (_oc_parts[0] if _oc_parts|length == 1 else '') %}
           {% set _oc_words = _oc_content.strip().split() if _oc_content else [] %}
           {% set _oc_count = _oc_words|length %}
-          <td style="text-align:center; border-bottom:1px solid #ddd; padding:0.2rem;">
+          <td class="tbl-cell center" style="padding:0.2rem; text-align:center;">
             <button type="button" class="report-btn active-editing" id="popupBtn_other_changes_{{ i }}"
               onclick="openPopup('other_changes_{{ i }}', 40)" {% if _oc_raw
-              %}data-def="{{ (_oc_title + '\n\n' + _oc_content) if _oc_title and _oc_content else _oc_raw }}" {% endif
-              %}>
+              %}data-def="{{ (_oc_title + '\n\n' + _oc_content) if _oc_title and _oc_content else _oc_raw }}" {% endif %}>
               <span id="popupTitle_other_changes_{{ i }}">
                 {% if _oc_title %}
                 {{ (_oc_title[:20] ~ '…') if _oc_title|length > 20 else _oc_title }}
@@ -154,18 +168,18 @@
             <input type="hidden" name="other_changes_content_{{ i }}" id="hiddenContent_other_changes_{{ i }}"
               value="{{ _oc_content }}">
           </td>
+
+          {# Comments modal popup trigger #}
           {% set _cmt_raw = row.get('comment', '') %}
           {% set _cmt_parts = _cmt_raw.split('\n', 1) if _cmt_raw else [] %}
           {% set _cmt_title = _cmt_parts[0] if _cmt_parts|length > 1 else '' %}
-          {% set _cmt_content = _cmt_parts[1] if _cmt_parts|length > 1 else (_cmt_parts[0] if _cmt_parts|length == 1
-          else '') %}
+          {% set _cmt_content = _cmt_parts[1] if _cmt_parts|length > 1 else (_cmt_parts[0] if _cmt_parts|length == 1 else '') %}
           {% set _cmt_words = _cmt_content.strip().split() if _cmt_content else [] %}
           {% set _cmt_count = _cmt_words|length %}
-          <td style="text-align:center; border-bottom:1px solid #ddd; padding:0.2rem;">
+          <td class="tbl-cell center" style="padding:0.2rem; text-align:center;">
             <button type="button" class="report-btn active-editing" id="popupBtn_comment_{{ i }}"
               onclick="openPopup('comment_{{ i }}', 20)" {% if _cmt_raw
-              %}data-def="{{ (_cmt_title + '\n\n' + _cmt_content) if _cmt_title and _cmt_content else _cmt_raw }}" {%
-              endif %}>
+              %}data-def="{{ (_cmt_title + '\n\n' + _cmt_content) if _cmt_title and _cmt_content else _cmt_raw }}" {% endif %}>
               <span id="popupTitle_comment_{{ i }}">
                 {% if _cmt_title %}
                 {{ (_cmt_title[:20] ~ '…') if _cmt_title|length > 20 else _cmt_title }}
@@ -180,19 +194,26 @@
             <input type="hidden" name="comment_content_{{ i }}" id="hiddenContent_comment_{{ i }}"
               value="{{ _cmt_content }}">
           </td>
-          </tr>
-          {% endfor %}
+        </tr>
+        {% endfor %}
       </tbody>
     </table>
   </div>
-  <div style="margin-top:0.5rem;">
+
+  {# Row control buttons: Add row and Remove row #}
+  <div style="margin-top:0.5rem; display:flex; align-items:center; gap:0.4rem;">
     <span id="addAgreementRow" class="add-row-btn" onclick="addAgreementRow()">+ Add row</span>
+    <span id="removeAgreementRow" class="remove-row-btn" onclick="removeAgreementRow()" style="display:none;">- Remove row</span>
   </div>
+
+  {# Form save button #}
   <div class="form-actions">
     <button type="submit" class="btn-save">Save</button>
   </div>
 </form>
+
 <script>
+  {# Percentage input boundary normalization helper #}
   function validatePercentage(input) {
     var v = input.value.trim().replace('%', '').trim();
     if (!v) return;
@@ -207,25 +228,106 @@
     input.value = num + '%';
   }
 
-  var agreementRowCount = {{ initial_rows }};
+  {# Dynamic row addition & removal handlers #}
   var agreementTotal = 10;
-  (function () {
+
+  function isAgreementRowEmpty(rowIndex) {
     var rows = document.querySelectorAll('.agreement-row');
-    for (var i = 0; i < agreementRowCount; i++) {
-      if (rows[i]) rows[i].style.display = '';
+    var row = rows[rowIndex];
+    if (!row) return true;
+    var nameInput = row.querySelector('input[name^="company_name_"]');
+    var wageInput = row.querySelector('input[name^="wage_increase_"]');
+    var dateInput = row.querySelector('input[name^="date_of_agreement_"]');
+    var levelSelect = row.querySelector('select[name^="level_"]');
+    var durationSelect = row.querySelector('select[name^="duration_"]');
+    var lumpInput = row.querySelector('input[name^="one_off_lump_sum_"]');
+    var workersInput = row.querySelector('input[name^="workers_affected_"]');
+    var ocTitle = row.querySelector('input[name^="other_changes_title_"]');
+    var ocContent = row.querySelector('input[name^="other_changes_content_"]');
+    var cmtTitle = row.querySelector('input[name^="comment_title_"]');
+    var cmtContent = row.querySelector('input[name^="comment_content_"]');
+
+    if (nameInput && nameInput.value.trim() !== '') return false;
+    if (wageInput && wageInput.value.trim() !== '') return false;
+    if (dateInput && dateInput.value.trim() !== '') return false;
+    if (levelSelect && levelSelect.value.trim() !== '') return false;
+    if (durationSelect && durationSelect.value.trim() !== '') return false;
+    if (lumpInput && lumpInput.value.trim() !== '') return false;
+    if (workersInput && workersInput.value.trim() !== '' && workersInput.value.trim() !== '0') return false;
+    if (ocTitle && ocTitle.value.trim() !== '') return false;
+    if (ocContent && ocContent.value.trim() !== '') return false;
+    if (cmtTitle && cmtTitle.value.trim() !== '') return false;
+    if (cmtContent && cmtContent.value.trim() !== '') return false;
+    return true;
+  }
+
+  // Count how many rows have data, default to 5
+  var agreementRowCount = 5;
+  var _allAgRows = document.querySelectorAll('.agreement-row');
+  for (var i = _allAgRows.length - 1; i >= 5; i--) {
+    if (!isAgreementRowEmpty(i)) {
+      agreementRowCount = i + 1;
+      break;
     }
-    if (agreementRowCount >= agreementTotal) {
-      document.getElementById('addAgreementRow').style.display = 'none';
+  }
+
+  function updateAgreementRowButtons() {
+    var addBtn = document.getElementById('addAgreementRow');
+    var removeBtn = document.getElementById('removeAgreementRow');
+    if (addBtn) {
+      addBtn.style.display = agreementRowCount < agreementTotal ? 'inline-block' : 'none';
     }
-  })();
+    if (removeBtn) {
+      var canRemove = agreementRowCount > 1 && isAgreementRowEmpty(agreementRowCount - 1);
+      removeBtn.style.display = canRemove ? 'inline-block' : 'none';
+    }
+  }
+
   function addAgreementRow() {
     if (agreementRowCount >= agreementTotal) return;
     var rows = document.querySelectorAll('.agreement-row');
     if (rows[agreementRowCount]) rows[agreementRowCount].style.display = '';
     agreementRowCount++;
-    if (agreementRowCount >= agreementTotal) {
-      document.getElementById('addAgreementRow').style.display = 'none';
+    updateAgreementRowButtons();
+  }
+
+  function removeAgreementRow() {
+    if (agreementRowCount <= 1) return;
+    var lastIndex = agreementRowCount - 1;
+    var rows = document.querySelectorAll('.agreement-row');
+    var row = rows[lastIndex];
+    if (row) {
+      if (!isAgreementRowEmpty(lastIndex)) {
+        alert('The last row is not empty. Please clear its contents first if you want to remove it.');
+        return;
+      }
+      row.querySelectorAll('input, select, textarea').forEach(function(el) { el.value = ''; });
+      var popups = row.querySelectorAll('.report-btn');
+      popups.forEach(function(btn) {
+        btn.removeAttribute('data-def');
+        var span = btn.querySelector('span');
+        if (span) span.innerHTML = '<span style="color:inherit; opacity:0.75;">no input</span>';
+      });
+      row.style.display = 'none';
+      agreementRowCount--;
+      updateAgreementRowButtons();
+      if (typeof autoSaveCurrentForm === 'function') {
+        autoSaveCurrentForm();
+      }
     }
   }
+
+  (function () {
+    var rows = document.querySelectorAll('.agreement-row');
+    for (var i = 0; i < rows.length; i++) {
+      rows[i].style.display = (i < agreementRowCount) ? '' : 'none';
+    }
+    updateAgreementRowButtons();
+
+    document.querySelectorAll('.agreement-row input, .agreement-row select').forEach(function(el) {
+      el.addEventListener('input', updateAgreementRowButtons);
+      el.addEventListener('change', updateAgreementRowButtons);
+    });
+  })();
 </script>
 {% endblock %}

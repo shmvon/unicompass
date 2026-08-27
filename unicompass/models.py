@@ -9,7 +9,7 @@ import os
 import datetime
 import tempfile
 from zipfile import ZipFile
-from io import BytesIO
+from io import BytesIO, StringIO
 from contextlib import contextmanager
 from config import DATABASE, EXPORT_DIR
 
@@ -18,9 +18,10 @@ from config import DATABASE, EXPORT_DIR
 def get_db():
     """Open a connection to the SQLite database, yielding a transaction context and closing it on exit."""
     os.makedirs(os.path.dirname(DATABASE), exist_ok=True)
-    conn = sqlite3.connect(DATABASE)
+    conn = sqlite3.connect(DATABASE, timeout=30.0)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("PRAGMA busy_timeout = 30000")
     conn.execute("PRAGMA foreign_keys=ON")
     try:
         with conn:
@@ -198,9 +199,8 @@ def check_login_rate_limit(user):
     with get_db() as db:
         ban = db.execute("SELECT banned_until FROM login_bans WHERE user = ?", (user,)).fetchone()
         if ban:
-            from datetime import datetime
-            banned_until = datetime.fromisoformat(ban["banned_until"])
-            if datetime.utcnow() < banned_until:
+            now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
+            if now_iso < ban["banned_until"]:
                 return False
             db.execute("DELETE FROM login_bans WHERE user = ?", (user,))
         return True
@@ -209,15 +209,16 @@ def check_login_rate_limit(user):
 def record_failed_login(user):
     """Record a failed login attempt; ban for 15 minutes after 5 failures within 15 minutes."""
     user = user.strip().lower()
+    now_utc = datetime.datetime.now(datetime.timezone.utc)
     with get_db() as db:
-        db.execute("INSERT INTO login_attempts (user) VALUES (?)", (user,))
-        cutoff = (datetime.datetime.utcnow() - datetime.timedelta(minutes=15)).isoformat()
+        db.execute("INSERT INTO login_attempts (user, attempted_at) VALUES (?, ?)", (user, now_utc.isoformat()))
+        cutoff = (now_utc - datetime.timedelta(minutes=15)).isoformat()
         count = db.execute(
             "SELECT COUNT(*) FROM login_attempts WHERE user = ? AND attempted_at >= ?",
             (user, cutoff)
         ).fetchone()[0]
         if count >= 5:
-            banned_until = (datetime.datetime.utcnow() + datetime.timedelta(minutes=15)).isoformat()
+            banned_until = (now_utc + datetime.timedelta(minutes=15)).isoformat()
             db.execute(
                 "INSERT OR REPLACE INTO login_bans (user, banned_until) VALUES (?, ?)",
                 (user, banned_until)
@@ -550,26 +551,279 @@ def export_all():
 
 
 def generate_export_zip(org_filter=None, sector_filter=None, is_admin=False):
-    """Create a zip archive of export files. For admin without filter, exports full DB tables."""
+    """Create a zip archive of export files for a specific organisation and sector."""
     export_all()
     buf = BytesIO()
     with ZipFile(buf, "w") as zf:
         if is_admin and not org_filter:
             # Full database dump for administrator
-            for fname in ("unicompass.xlsx", "annual_results.csv", "agreements.csv", "companies.csv"):
+            for fname in ("unicompass.xlsx", "unicompass_report.pdf", "annual_results.csv", "agreements.csv", "companies.csv"):
                 fpath = os.path.join(EXPORT_DIR, fname)
                 if os.path.isfile(fpath) and fname not in zf.namelist():
                     zf.write(fpath, arcname=fname)
         else:
             prefix = org_sector_file_prefix(org_filter, sector_filter) + "_" if org_filter else None
             for fname in os.listdir(EXPORT_DIR):
-                if not (fname.endswith(".csv") or fname.endswith(".xlsx")):
+                if not (fname.endswith(".csv") or fname.endswith(".xlsx") or fname.endswith(".pdf")):
                     continue
                 if prefix and not fname.startswith(prefix):
                     continue
                 fpath = os.path.join(EXPORT_DIR, fname)
                 if os.path.isfile(fpath) and fname not in zf.namelist():
                     zf.write(fpath, arcname=fname)
+    return buf.getvalue()
+
+
+def generate_all_exports_zip():
+    """Create a zip archive of all export files (CSVs, XLSX, and PDFs) for all organisations and sectors in EXPORT_DIR."""
+    export_all()
+    buf = BytesIO()
+    with ZipFile(buf, "w") as zf:
+        for fname in sorted(os.listdir(EXPORT_DIR)):
+            if fname.endswith(".csv") or fname.endswith(".xlsx") or fname.endswith(".pdf"):
+                fpath = os.path.join(EXPORT_DIR, fname)
+                if os.path.isfile(fpath) and fname not in zf.namelist():
+                    zf.write(fpath, arcname=fname)
+    return buf.getvalue()
+
+
+ANNUAL_VARIABLES_EXPORT = [
+    ("bargaining_climate", "Bargaining climate"),
+    ("collective_bargaining_coverage", "Collective bargaining coverage (%)"),
+    ("avg_pay_increase", "Collectively agreed pay increase (%)"),
+    ("one_off_lump_sum", "Additional lump sum (€)"),
+    ("multi_employer_agreements", "Number of multi-employer agreements"),
+    ("single_employer_agreements", "Number of single-employer agreements"),
+    ("avg_monthly_wage", "Average full-time monthly wage (€)"),
+    ("inflation_rate", "National inflation rate (%)"),
+    ("sectoral_productivity", "Sectoral productivity evolution (%)"),
+    ("outcome_reporting", "Qualitative reporting"),
+]
+
+
+def _extract_title(text):
+    """Return only the title (first line) of a multi-line comment or other aspects field."""
+    if not text:
+        return ""
+    lines = str(text).strip().split("\n")
+    return lines[0].strip() if lines else ""
+
+
+def generate_pdf_report(organisation=None, sector=None, is_admin=False):
+    """Generate a styled landscape A4 PDF report matching the Example layout with title-limited comments."""
+    from reportlab.lib.pagesizes import A4, landscape
+    from reportlab.lib import colors
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
+
+    buf = BytesIO()
+    doc = SimpleDocTemplate(
+        buf,
+        pagesize=landscape(A4),
+        leftMargin=24,
+        rightMargin=24,
+        topMargin=24,
+        bottomMargin=24
+    )
+    styles = getSampleStyleSheet()
+
+    title_style = ParagraphStyle(
+        'RepTitle', parent=styles['Heading1'],
+        fontName='Helvetica-Bold', fontSize=15, leading=18,
+        textColor=colors.HexColor('#1a3a5c'), spaceAfter=2
+    )
+    sub_style = ParagraphStyle(
+        'RepSub', parent=styles['Normal'],
+        fontName='Helvetica', fontSize=8.5, leading=11,
+        textColor=colors.HexColor('#555555'), spaceAfter=8
+    )
+    h2_style = ParagraphStyle(
+        'RepH2', parent=styles['Heading2'],
+        fontName='Helvetica-Bold', fontSize=10.5, leading=13,
+        textColor=colors.HexColor('#1a3a5c'), spaceBefore=8, spaceAfter=4
+    )
+    cell_style = ParagraphStyle(
+        'RepCell', parent=styles['Normal'],
+        fontName='Helvetica', fontSize=7.5, leading=9.5,
+        alignment=TA_LEFT, textColor=colors.HexColor('#222222')
+    )
+    cell_bold = ParagraphStyle(
+        'RepCellBold', parent=styles['Normal'],
+        fontName='Helvetica-Bold', fontSize=7.5, leading=9.5,
+        alignment=TA_LEFT, textColor=colors.HexColor('#1a3a5c')
+    )
+    cell_center = ParagraphStyle(
+        'RepCellCenter', parent=styles['Normal'],
+        fontName='Helvetica', fontSize=7.5, leading=9.5,
+        alignment=TA_CENTER, textColor=colors.HexColor('#222222')
+    )
+    th_style = ParagraphStyle(
+        'RepTh', parent=styles['Normal'],
+        fontName='Helvetica-Bold', fontSize=8, leading=10,
+        alignment=TA_CENTER, textColor=colors.white
+    )
+    th_left = ParagraphStyle(
+        'RepThLeft', parent=styles['Normal'],
+        fontName='Helvetica-Bold', fontSize=8, leading=10,
+        alignment=TA_LEFT, textColor=colors.white
+    )
+
+    story = []
+    
+    org_label = organisation or ('All Affiliates' if is_admin else 'General')
+    sec_label = sector or 'All Sectors'
+    now_str = datetime.datetime.now().strftime('%Y-%m-%d')
+    
+    story.append(Paragraph('UNI Compass — Collective Bargaining Report', title_style))
+    story.append(Paragraph(f'Organisation: <b>{org_label}</b> &nbsp;|&nbsp; Sector: <b>{sec_label}</b> &nbsp;|&nbsp; Generated: <b>{now_str}</b>', sub_style))
+    story.append(HRFlowable(width='100%', thickness=1, color=colors.HexColor('#1a3a5c'), spaceBefore=0, spaceAfter=6))
+
+    years = list(range(2023, 2028))
+    
+    # --- 1. Annual Results ---
+    story.append(Paragraph('1. Annual Results', h2_style))
+    saved_annual = get_annual_results(organisation, years=years, sector=sector) if organisation else {}
+    
+    ann_headers = [Paragraph('Variable', th_left)] + [Paragraph(str(y), th_style) for y in years]
+    ann_data = [ann_headers]
+    for vkey, vname in ANNUAL_VARIABLES_EXPORT:
+        row = [Paragraph(vname, cell_bold)]
+        for y in years:
+            cdata = saved_annual.get((vkey, y), {})
+            val = cdata.get('value') or cdata.get('qual_value') or ''
+            cmt = _extract_title(cdata.get('comment', ''))
+            display_text = val
+            if cmt and not val:
+                display_text = cmt
+            row.append(Paragraph(display_text or '—', cell_center))
+        ann_data.append(row)
+    
+    t_ann = Table(ann_data, colWidths=[240] + [110]*len(years))
+    t_ann.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1a3a5c')),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#dddddd')),
+        ('TOPPADDING', (0, 0), (-1, -1), 2.5),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 2.5),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f8fafc')]),
+    ]))
+    story.append(t_ann)
+    story.append(Spacer(1, 10))
+
+    # --- 2. Major Agreements ---
+    ag_years_with_data = []
+    if organisation:
+        for y in sorted(years, reverse=True):
+            rows = get_agreements(organisation, y, sector=sector)
+            valid = [r for r in rows if any(r.get(k) for k in ('company_name', 'wage_increase', 'workers_affected', 'one_off_lump_sum', 'other_changes', 'comment'))]
+            if valid:
+                ag_years_with_data.append((y, valid))
+
+    if not ag_years_with_data:
+        ag_years_with_data = [(years[-1], [])]
+
+    for y, ag_rows in ag_years_with_data:
+        story.append(Paragraph(f'2. Major Agreements ({y})', h2_style))
+        ag_headers = [
+            Paragraph('#', th_style),
+            Paragraph('Reference / Company', th_left),
+            Paragraph('Level', th_left),
+            Paragraph('Date', th_style),
+            Paragraph('Duration', th_style),
+            Paragraph('Workers', th_style),
+            Paragraph('Pay increase', th_style),
+            Paragraph('Lump sum', th_style),
+            Paragraph('Other aspects', th_left),
+            Paragraph('Comments', th_left),
+        ]
+        ag_table_data = [ag_headers]
+        if ag_rows:
+            for idx, r in enumerate(ag_rows, 1):
+                ag_table_data.append([
+                    Paragraph(str(idx), cell_center),
+                    Paragraph(r.get('company_name', '') or '—', cell_bold),
+                    Paragraph(r.get('level', '') or '—', cell_style),
+                    Paragraph(r.get('date_of_agreement', '') or '—', cell_center),
+                    Paragraph(r.get('duration', '') or '—', cell_center),
+                    Paragraph(str(r.get('workers_affected', '')) if r.get('workers_affected') else '—', cell_center),
+                    Paragraph(r.get('wage_increase', '') or '—', cell_center),
+                    Paragraph(r.get('one_off_lump_sum', '') or '—', cell_center),
+                    Paragraph(_extract_title(r.get('other_changes', '')) or '—', cell_style),
+                    Paragraph(_extract_title(r.get('comment', '')) or '—', cell_style),
+                ])
+        else:
+            ag_table_data.append([Paragraph('—', cell_center)] + [Paragraph('No recorded agreements', cell_style)] + [Paragraph('—', cell_center)]*8)
+
+        t_ag = Table(ag_table_data, colWidths=[20, 115, 65, 55, 55, 55, 65, 60, 150, 150])
+        t_ag.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1a3a5c')),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#dddddd')),
+            ('TOPPADDING', (0, 0), (-1, -1), 2.5),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 2.5),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f8fafc')]),
+        ]))
+        story.append(t_ag)
+        story.append(Spacer(1, 10))
+
+    # --- 3. Major Companies ---
+    co_years_with_data = []
+    if organisation:
+        for y in sorted(years, reverse=True):
+            rows = get_companies(organisation, y, sector=sector)
+            valid = [r for r in rows if any(r.get(k) for k in ('company_name', 'workers', 'agreement', 'union_density', 'comment'))]
+            if valid:
+                co_years_with_data.append((y, valid))
+
+    if not co_years_with_data:
+        co_years_with_data = [(years[-1], [])]
+
+    for y, co_rows in co_years_with_data:
+        story.append(Paragraph(f'3. Major Companies ({y})', h2_style))
+        co_headers = [
+            Paragraph('#', th_style),
+            Paragraph('Company name', th_left),
+            Paragraph('Workers', th_style),
+            Paragraph('MNC', th_style),
+            Paragraph('CLA', th_style),
+            Paragraph('Unions', th_style),
+            Paragraph('Density', th_style),
+            Paragraph('Representation', th_style),
+            Paragraph('EWC', th_style),
+            Paragraph('Comments', th_left),
+        ]
+        co_table_data = [co_headers]
+        if co_rows:
+            for idx, r in enumerate(co_rows, 1):
+                co_table_data.append([
+                    Paragraph(str(idx), cell_center),
+                    Paragraph(r.get('company_name', '') or '—', cell_bold),
+                    Paragraph(str(r.get('workers', '')) if r.get('workers') else '—', cell_center),
+                    Paragraph(r.get('mnc', '') or '—', cell_center),
+                    Paragraph(r.get('agreement', '') or '—', cell_center),
+                    Paragraph(str(r.get('number_of_unions', '')) if r.get('number_of_unions') else '—', cell_center),
+                    Paragraph(r.get('union_density', '') or '—', cell_center),
+                    Paragraph(r.get('worker_representation', '') or '—', cell_center),
+                    Paragraph(r.get('ewc_presence', '') or '—', cell_center),
+                    Paragraph(_extract_title(r.get('comment', '')) or '—', cell_style),
+                ])
+        else:
+            co_table_data.append([Paragraph('—', cell_center)] + [Paragraph('No recorded companies', cell_style)] + [Paragraph('—', cell_center)]*8)
+
+        t_co = Table(co_table_data, colWidths=[20, 140, 55, 45, 65, 45, 65, 75, 45, 235])
+        t_co.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1a3a5c')),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#dddddd')),
+            ('TOPPADDING', (0, 0), (-1, -1), 2.5),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 2.5),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f8fafc')]),
+        ]))
+        story.append(t_co)
+        story.append(Spacer(1, 10))
+
+    doc.build(story)
     return buf.getvalue()
 
 
@@ -592,4 +846,69 @@ def backup_database():
                 os.remove(tmp_path)
             except OSError:
                 pass
+
+
+def backup_database_csv_zip():
+    """Export all database tables into individual CSV files and package them into a zip archive."""
+    buf = BytesIO()
+    with get_db() as db:
+        tables = [r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT IN ('login_attempts', 'login_bans')").fetchall()]
+        ordered_tables = []
+        for pref in ("annual_results", "agreements", "companies", "users"):
+            if pref in tables:
+                ordered_tables.append(pref)
+        for t in tables:
+            if t not in ordered_tables:
+                ordered_tables.append(t)
+
+        with ZipFile(buf, "w") as zf:
+            for table in ordered_tables:
+                rows = [dict(r) for r in db.execute(f"SELECT * FROM {table}").fetchall()]
+                csv_buf = StringIO()
+                if rows:
+                    writer = csv.DictWriter(csv_buf, fieldnames=list(rows[0].keys()))
+                    writer.writeheader()
+                    writer.writerows(rows)
+                else:
+                    cols = [c[1] for c in db.execute(f"PRAGMA table_info({table})").fetchall()]
+                    writer = csv.DictWriter(csv_buf, fieldnames=cols)
+                    writer.writeheader()
+                zf.writestr(f"{table}.csv", csv_buf.getvalue())
+    return buf.getvalue()
+
+
+def backup_database_xlsx():
+    """Export all database tables into an Excel workbook (.xlsx) with a sheet per table."""
+    from openpyxl import Workbook
+    wb = Workbook()
+    default = wb.active
+    sheet_count = 0
+    with get_db() as db:
+        tables = [r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT IN ('login_attempts', 'login_bans')").fetchall()]
+        ordered_tables = []
+        for pref in ("annual_results", "agreements", "companies", "users"):
+            if pref in tables:
+                ordered_tables.append(pref)
+        for t in tables:
+            if t not in ordered_tables:
+                ordered_tables.append(t)
+
+        for table in ordered_tables:
+            rows = [dict(r) for r in db.execute(f"SELECT * FROM {table}").fetchall()]
+            ws = wb.create_sheet(title=table)
+            sheet_count += 1
+            if rows:
+                headers = list(rows[0].keys())
+                ws.append(headers)
+                for r in rows:
+                    ws.append([r[h] for h in headers])
+            else:
+                cols = [c[1] for c in db.execute(f"PRAGMA table_info({table})").fetchall()]
+                ws.append(cols)
+    if sheet_count > 0 and default in wb.worksheets:
+        wb.remove(default)
+    output = BytesIO()
+    wb.save(output)
+    return output.getvalue()
+
 

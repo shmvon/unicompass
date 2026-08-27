@@ -7,7 +7,7 @@ from io import BytesIO
 import datetime
 import os
 from werkzeug.utils import secure_filename
-from flask import Flask, render_template, request, redirect, url_for, session, flash, send_file, send_from_directory, abort
+from flask import Flask, render_template, request, redirect, url_for, session, flash, send_file, send_from_directory, abort, jsonify
 
 from auth import (
     authenticate,
@@ -28,7 +28,11 @@ from models import (
     compute_progress,
     export_all,
     generate_export_zip,
+    generate_all_exports_zip,
     backup_database,
+    backup_database_csv_zip,
+    backup_database_xlsx,
+    generate_pdf_report,
     org_file_prefix,
     org_sector_file_prefix,
     check_login_rate_limit,
@@ -114,10 +118,10 @@ LIKERT_SCORES = {
 }
 
 LIKERT_COLORS = {
-    5: "background-color:rgba(250, 204, 21, 0.45);",  # High / Yellow
-    4: "background-color:rgba(234, 179, 8, 0.30);",
-    3: "background-color:rgba(132, 204, 22, 0.22);",   # Neutral / Yellow-Green
-    2: "background-color:rgba(14, 165, 233, 0.25);",
+    5: "background-color:rgba(249, 115, 22, 0.40);",  # High / Orange
+    4: "background-color:rgba(251, 146, 60, 0.30);",  # Rather favourable / Light Orange
+    3: "background-color:rgba(148, 163, 184, 0.22);", # Neutral / Slate
+    2: "background-color:rgba(56, 189, 248, 0.25);",  # Rather unfavourable / Sky Blue
     1: "background-color:rgba(37, 99, 235, 0.35);",   # Low / Blue
 }
 
@@ -198,10 +202,10 @@ def compute_cell_colors(saved, variables, years):
                 for y, v in numeric_vals:
                     if (var_key, y) not in colormap:
                         ratio = (v - mn) / rng
-                        # Low (0.0): Blue (37, 99, 235) -> High (1.0): Yellow (250, 204, 21)
-                        red = int(37 + (250 - 37) * ratio)
-                        green = int(99 + (204 - 99) * ratio)
-                        blue = int(235 + (21 - 235) * ratio)
+                        # Low (0.0): Blue (37, 99, 235) -> High (1.0): Orange (249, 115, 22)
+                        red = int(37 + (249 - 37) * ratio)
+                        green = int(99 + (115 - 99) * ratio)
+                        blue = int(235 + (22 - 235) * ratio)
                         alpha = 0.15 + 0.25 * abs(ratio - 0.5) * 2
                         colormap[(var_key, y)] = f"background-color:rgba({red}, {green}, {blue}, {alpha:.2f});"
     return colormap
@@ -275,7 +279,14 @@ def logout():
 @login_required
 def dashboard():
     years = current_years()
-    org = session["organisation"]
+    if session.get("is_admin"):
+        req_org = request.args.get("org") or session.get("view_org") or session.get("organisation", "")
+        session["view_org"] = req_org
+        org = req_org
+        if request.args.get("sector"):
+            session["sector"] = request.args.get("sector")
+    else:
+        org = session["organisation"]
     sector = session.get("sector", "")
     per_year = {}
     for y in years:
@@ -299,7 +310,7 @@ def dashboard():
             "ag_filled": ag_filled,
             "co_filled": co_filled,
         }
-    return render_template("home.html", progress_years=per_year)
+    return render_template("home.html", progress_years=per_year, view_org=org)
 
 
 @app.route("/admin")
@@ -350,6 +361,51 @@ def admin_download_db():
     )
 
 
+@app.route("/admin/download-csv")
+@login_required
+@admin_required
+def admin_download_csv():
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"unicompass_csv_{timestamp}.zip"
+    zip_bytes = backup_database_csv_zip()
+    return send_file(
+        BytesIO(zip_bytes),
+        mimetype="application/zip",
+        as_attachment=True,
+        download_name=filename,
+    )
+
+
+@app.route("/admin/download-xlsx")
+@login_required
+@admin_required
+def admin_download_xlsx():
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"unicompass_{timestamp}.xlsx"
+    xlsx_bytes = backup_database_xlsx()
+    return send_file(
+        BytesIO(xlsx_bytes),
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        as_attachment=True,
+        download_name=filename,
+    )
+
+
+@app.route("/admin/download-zip")
+@login_required
+@admin_required
+def admin_download_zip():
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"unicompass_all_tables_{timestamp}.zip"
+    zip_bytes = generate_all_exports_zip()
+    return send_file(
+        BytesIO(zip_bytes),
+        mimetype="application/zip",
+        as_attachment=True,
+        download_name=filename,
+    )
+
+
 @app.route("/annual-results", methods=["GET", "POST"])
 @login_required
 def annual_results():
@@ -367,15 +423,24 @@ def annual_results():
         data = []
         for item in ANNUAL_VARIABLES:
             var_key = item[0]
+            var_type = item[2]
             row_mode = request.form.get(f"row_mode_{var_key}", "num").strip()
             for y in years:
                 val = request.form.get(f"value_{var_key}_{y}", "").strip()
                 qual = request.form.get(f"qual_{var_key}_{y}", "").strip()
-                cmt = request.form.get(f"comment_{var_key}_{y}", "").strip()
-                if var_key == "outcome_reporting" and cmt:
-                    words = cmt.strip().split()
-                    if len(words) > 80:
-                        cmt = " ".join(words[:80])
+                if var_type == "report":
+                    rep_title = request.form.get(f"title_{var_key}_{y}", "").strip()
+                    rep_content = request.form.get(f"content_{var_key}_{y}", "").strip()
+                    if rep_title or rep_content:
+                        cmt = _combine_tc(rep_title, rep_content)
+                    else:
+                        cmt = request.form.get(f"comment_{var_key}_{y}", "").strip()
+                    if cmt:
+                        words = cmt.strip().split()
+                        if len(words) > 80:
+                            cmt = " ".join(words[:80])
+                else:
+                    cmt = request.form.get(f"comment_{var_key}_{y}", "").strip()
                 if val or qual or cmt:
                     data.append({
                         "variable": var_key,
@@ -387,6 +452,8 @@ def annual_results():
                         "sector": sector,
                     })
         save_annual_results(org, data, sector=sector)
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest" or "application/json" in request.headers.get("Accept", ""):
+            return jsonify({"status": "ok", "message": f"Annual results saved for {org}."})
         export_all()
         flash(f"Annual results saved for {org}.")
         if session.get("is_admin") and org != session.get("organisation"):
@@ -446,6 +513,8 @@ def agreements():
                 "sector": sector,
             })
         save_agreements(org, selected_year, rows, sector=sector)
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest" or "application/json" in request.headers.get("Accept", ""):
+            return jsonify({"status": "ok", "message": f"Major agreements saved for {org}."})
         export_all()
         flash(f"Major agreements saved for {org}.")
         if session.get("is_admin") and org != session.get("organisation"):
@@ -491,6 +560,8 @@ def companies():
                 "sector": sector,
             })
         save_companies(org, selected_year, rows, sector=sector)
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest" or "application/json" in request.headers.get("Accept", ""):
+            return jsonify({"status": "ok", "message": f"Major companies saved for {org}."})
         export_all()
         flash(f"Major companies saved for {org}.")
         if session.get("is_admin") and org != session.get("organisation"):
@@ -537,45 +608,32 @@ def example():
 def export():
     export_all()
     org = session["organisation"]
+    if session.get("is_admin"):
+        org = request.args.get("org") or session.get("view_org") or org
+        session["view_org"] = org
+        if request.args.get("sector"):
+            session["sector"] = request.args.get("sector")
     sector = session.get("sector", "")
     is_adm = session.get("is_admin", False)
 
-    db_files = []
     affiliate_files = []
-
-    if is_adm:
-        # Full database tables for admin
-        for fname in ("unicompass.xlsx", "annual_results.csv", "agreements.csv", "companies.csv"):
-            fpath = os.path.join(EXPORT_DIR, fname)
-            if os.path.isfile(fpath):
-                db_files.append({"name": fname, "size": f"{os.path.getsize(fpath) / 1024:.1f} KB"})
-
-        # Per affiliate & sector files
-        for fname in sorted(os.listdir(EXPORT_DIR), reverse=True):
-            if not (fname.endswith(".csv") or fname.endswith(".xlsx")):
-                continue
-            if fname in ("unicompass.xlsx", "annual_results.csv", "agreements.csv", "companies.csv"):
-                continue
+    prefix = org_sector_file_prefix(org, sector) + "_"
+    fallback_prefix = org_file_prefix(org) + "_"
+    for fname in sorted(os.listdir(EXPORT_DIR), reverse=True):
+        if not (fname.endswith(".csv") or fname.endswith(".xlsx")):
+            continue
+        if fname in ("unicompass.xlsx", "unicompass_report.pdf", "annual_results.csv", "agreements.csv", "companies.csv"):
+            continue
+        if fname.startswith(prefix) or (sector.lower() == "all" and fname.startswith(fallback_prefix)):
             fpath = os.path.join(EXPORT_DIR, fname)
             if os.path.isfile(fpath):
                 affiliate_files.append({"name": fname, "size": f"{os.path.getsize(fpath) / 1024:.1f} KB"})
-    else:
-        # Regular user: strictly for selected organisation and sector
-        prefix = org_sector_file_prefix(org, sector) + "_"
-        fallback_prefix = org_file_prefix(org) + "_"
-        for fname in sorted(os.listdir(EXPORT_DIR), reverse=True):
-            if not (fname.endswith(".csv") or fname.endswith(".xlsx")):
-                continue
-            if fname.startswith(prefix) or (sector.lower() == "all" and fname.startswith(fallback_prefix)):
-                fpath = os.path.join(EXPORT_DIR, fname)
-                if os.path.isfile(fpath):
-                    affiliate_files.append({"name": fname, "size": f"{os.path.getsize(fpath) / 1024:.1f} KB"})
 
     return render_template(
         "export.html",
-        db_files=db_files,
         files=affiliate_files,
         is_admin=is_adm,
+        view_org=org,
         selected_org=org,
         selected_sector=sector,
     )
@@ -585,7 +643,7 @@ def export():
 @login_required
 def export_download(filename):
     safe_name = secure_filename(filename)
-    if not (safe_name.endswith(".csv") or safe_name.endswith(".xlsx")):
+    if not (safe_name.endswith(".csv") or safe_name.endswith(".xlsx") or safe_name.endswith(".pdf")):
         abort(404)
     org = session["organisation"]
     sector = session.get("sector", "")
@@ -597,19 +655,40 @@ def export_download(filename):
     return send_from_directory(EXPORT_DIR, safe_name, as_attachment=True)
 
 
+@app.route("/export/pdf")
+@login_required
+def export_pdf():
+    is_adm = session.get("is_admin", False)
+    if is_adm:
+        org = request.args.get("org") or session.get("view_org") or session.get("organisation", "")
+        sector = request.args.get("sector") or session.get("sector", "")
+    else:
+        org = session["organisation"]
+        sector = session.get("sector", "")
+    
+    pdf_bytes = generate_pdf_report(organisation=org, sector=sector, is_admin=is_adm)
+    prefix = org_sector_file_prefix(org, sector) if (org and org != "UNI Europe") else "unicompass"
+    filename = f"{prefix}_report.pdf" if prefix else "report.pdf"
+    return send_file(
+        BytesIO(pdf_bytes),
+        mimetype="application/pdf",
+        as_attachment=True,
+        download_name=filename,
+    )
+
+
 @app.route("/export/download-all")
 @login_required
 def export_download_all():
     org = session["organisation"]
+    if session.get("is_admin"):
+        org = request.args.get("org") or session.get("view_org") or org
     sector = session.get("sector", "")
-    is_adm = session.get("is_admin", False)
-    if is_adm:
-        zip_bytes = generate_export_zip(is_admin=True)
-    else:
-        zip_bytes = generate_export_zip(org_filter=org, sector_filter=sector, is_admin=False)
+    zip_bytes = generate_export_zip(org_filter=org, sector_filter=sector, is_admin=False)
+    prefix = org_sector_file_prefix(org, sector)
     return send_file(
         BytesIO(zip_bytes),
         mimetype="application/zip",
         as_attachment=True,
-        download_name="unicompass_export.zip",
+        download_name=f"{prefix}_tables.zip" if prefix else "unicompass_export.zip",
     )

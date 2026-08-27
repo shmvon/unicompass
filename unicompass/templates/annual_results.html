@@ -1,17 +1,24 @@
 {% extends "layout.html" %}
 {% block title %}— Annual Results{% endblock %}
 {% block content %}
+{# Admin viewing indicator banner #}
 {% if view_org and view_org != session_org %}
 <p class="viewing-banner">Viewing: <strong>{{ view_org }}</strong></p>
 {% endif %}
 
+{# Page introduction & Heatmap legend #}
 <div class="page-intro">
-  <p>The annual results cover aggregate figures for your organisation and sector.</p>
+  <p>The annual results cover aggregate figures for your organisation and sector. Open the column to add comments.</p>
   <p>
-    Select <span class="row-toggle" style="cursor:default; display:inline-block; vertical-align:middle; margin:0 2px;">detail</span> next to the variable if you can provide precise figures, or <span class="row-toggle" style="cursor:default; display:inline-block; vertical-align:middle; margin:0 2px;">proxy</span> for wider estimates. You can always toggle between the two.
+    Select <span class="row-toggle"
+      style="cursor:default; display:inline-block; vertical-align:middle; margin:0 2px;">detail</span> next to the
+    variable if you can provide precise figures, or <span class="row-toggle"
+      style="cursor:default; display:inline-block; vertical-align:middle; margin:0 2px;">proxy</span> for wider
+    estimates. You can always toggle between the two.
   </p>
   <div class="heatmap-legend" style="margin-top:0.6rem;">
-    <span class="heatmap-label" style="margin-left:0; margin-right:0.4rem; font-weight:500;">Heatmap across years:</span>
+    <span class="heatmap-label" style="margin-left:0; margin-right:0.4rem; font-weight:500;">Heatmap across
+      years:</span>
     <span style="display:inline-flex; align-items:center; gap:4px;">
       <span class="heatmap-swatch-low"></span>
       <span>Low</span>
@@ -24,24 +31,39 @@
   </div>
 </div>
 
+{# Annual results form #}
 <form method="POST">
   {% if view_org %}<input type="hidden" name="org" value="{{ view_org }}">{% endif %}
   {% set latest_year = years[-1] %}
   {% set default_open = latest_year %}
+  
+  {# Variable tooltip definitions #}
   {% set var_defs = {
-    "bargaining_climate": "How favourable or unfavourable were the overall circumstances for coming to negotiations? Consider economic circumstances and social aspects of the bargaining process.",
-    "collective_bargaining_coverage": "Share of workers covered by a substantial wage agreement.",
-    "avg_pay_increase": "Average nominal collectively agreed wage increase for the average worker (percentage). Include the basic gross wage rate and regular extra pay (e.g. shift bonuses). Do not include one-off payments. In case of multi-year agreements, report the staged increase or annual average increase.",
-    "avg_wage_increase": "Average nominal collectively agreed wage increase for the average worker (percentage). Include the basic gross wage rate and regular extra pay (e.g. shift bonuses). Do not include one-off payments. In case of multi-year agreements, report the staged increase or annual average increase.",
-    "one_off_lump_sum": "Non-permanent benefits paid on top of the increase in pay, e.g. profit sharing, efficiency bonuses, etc. (estimated gross value in euro over the year).",
-    "multi_employer_agreements": "Number of collective agreements involving multiple employers or the entire sector.",
-    "single_employer_agreements": "Number of collective agreements covering a single employer. If establishment agreements differ, consider them as separate agreements.",
-    "avg_monthly_wage": "Average gross monthly wage level of full-time equivalent workers (annual average in euro).",
-    "inflation_rate": "Change in the Consumer Price Index (CPI) between December and December of the previous year, in percentage.",
-    "sectoral_productivity": "Annual percentage change in real economic output (inflation-adjusted gross value added) per hour worked within the sector.",
-    "outcome_reporting": "Short description of the general context and outcomes of collective bargaining for this year. E.g. framework agreements, non-wage bargaining (training, employment, pensions), institutional and political factors, industrial action."
+  "bargaining_climate": "How favourable or unfavourable were the overall circumstances for coming to negotiations?
+  Consider economic circumstances and social aspects of the bargaining process.",
+  "collective_bargaining_coverage": "Share of workers covered by a substantial wage agreement.",
+  "avg_pay_increase": "Average nominal collectively agreed wage increase for the average worker (percentage). Include
+  the basic gross wage rate and regular extra pay (e.g. shift bonuses). Do not include one-off payments. In case of
+  multi-year agreements, report the staged increase or annual average increase.",
+  "avg_wage_increase": "Average nominal collectively agreed wage increase for the average worker (percentage). Include
+  the basic gross wage rate and regular extra pay (e.g. shift bonuses). Do not include one-off payments. In case of
+  multi-year agreements, report the staged increase or annual average increase.",
+  "one_off_lump_sum": "Non-permanent benefits paid on top of the increase in pay, e.g. profit sharing, efficiency
+  bonuses, etc. (estimated gross value in euro over the year).",
+  "multi_employer_agreements": "Number of collective agreements involving multiple employers or the entire sector.",
+  "single_employer_agreements": "Number of collective agreements covering a single employer. If establishment agreements
+  differ, consider them as separate agreements.",
+  "avg_monthly_wage": "Average gross monthly wage level of full-time equivalent workers (annual average in euro).",
+  "inflation_rate": "Change in the Consumer Price Index (CPI) between December and December of the previous year, in
+  percentage.",
+  "sectoral_productivity": "Annual percentage change in real economic output (inflation-adjusted gross value added) per
+  hour worked within the sector.",
+  "outcome_reporting": "Short description of the general context and outcomes of collective bargaining for this year.
+  E.g. framework agreements, non-wage bargaining (training, employment, pensions), institutional and political factors,
+  industrial action."
   } %}
 
+  {# Annual results data table with expandable year columns #}
   <div class="table-wrap">
     <table style="border-collapse:collapse; width:100%; font-size:0.85rem; border:none;">
       <colgroup>
@@ -91,6 +113,7 @@
         {% set is_forced_qual = var_key in forced_qual %}
         {% set var_def = var_defs.get(var_key, '') %}
         <tr data-var="{{ var_key }}" {% if var_type=='report' %}style="vertical-align:top;" {% endif %}>
+          {# Variable label and Detail/Proxy mode switch #}
           <td style="padding:0.3rem 0.6rem; border-bottom:1px solid #ddd; white-space:nowrap; vertical-align:middle;">
             {% if var_type != 'climate' and var_type != 'report' %}
             <button type="button" class="row-toggle" onclick="toggleRow(this)"
@@ -113,12 +136,14 @@
             style="padding:0.2rem; border-bottom:1px solid #ddd; text-align:center; vertical-align:middle;{% if not loop.first %} border-left:2px solid #e8e8e8;{% endif %}">
             {% set _rep_parts = cmt.split('\n', 1) if cmt else [] %}
             {% set _rep_title = _rep_parts[0] if _rep_parts|length > 1 else '' %}
-            {% set _rep_content = _rep_parts[1] if _rep_parts|length > 1 else (_rep_parts[0] if _rep_parts|length == 1 else '') %}
+            {% set _rep_content = _rep_parts[1] if _rep_parts|length > 1 else (_rep_parts[0] if _rep_parts|length == 1
+            else '') %}
             {% set words_list = _rep_content.strip().split() if _rep_content else [] %}
             {% set word_count = words_list|length %}
-            <button type="button" class="report-btn {% if y == default_open %}active-editing{% endif %}"
-              id="reportBtn_{{ y }}" onclick="openReportModal({{ y }})"
-              {% if cmt %}data-def="{{ (_rep_title + '\n\n' + _rep_content) if _rep_title and _rep_content else cmt }}"{% endif %}>
+            <button type="button" class="report-btn active-editing" id="reportBtn_{{ y }}"
+              onclick="openReportModal({{ y }})" {% if cmt
+              %}data-def="{{ (_rep_title + '\n\n' + _rep_content) if _rep_title and _rep_content else cmt }}" {% endif
+              %}>
               <span id="reportBtnText_{{ y }}">
                 {% if _rep_title %}
                 {{ (_rep_title[:20] ~ '…') if _rep_title|length > 20 else _rep_title }}
@@ -129,6 +154,9 @@
                 {% endif %}
               </span>
             </button>
+            <input type="hidden" name="title_{{ var_key }}_{{ y }}" id="hiddenReportTitle_{{ y }}" value="{{ _rep_title }}">
+            <textarea name="content_{{ var_key }}_{{ y }}" id="hiddenReportContent_{{ y }}"
+              style="display:none;">{{ _rep_content }}</textarea>
             <textarea name="comment_{{ var_key }}_{{ y }}" id="hiddenReport_{{ y }}"
               style="display:none;">{{ cmt }}</textarea>
           </td>
@@ -137,7 +165,8 @@
             style="padding:0.2rem; border-bottom:1px solid #ddd; text-align:center; vertical-align:middle;{% if not loop.first %} border-left:2px solid #e8e8e8;{% endif %}"
             {% if y !=default_open and cmt %}data-cmt="{{ cmt }}" {% endif %}>
             {% if var_type == 'climate' %}
-            <select name="qual_{{ var_key }}_{{ y }}" class="cell-qual row-{{ var_key }}" onchange="updateLikertColor(this)"
+            <select name="qual_{{ var_key }}_{{ y }}" class="cell-qual row-{{ var_key }}"
+              onchange="updateLikertColor(this)"
               style="width:75px; padding:0.2rem; border:1px solid #ccc; border-radius:3px; font-size:0.75rem; text-align:center; {{ bg }}">
               <option value="">—</option>
               <option value="very favourable" {% if qual=='very favourable' %}selected{% endif %}>Very favourable
@@ -152,7 +181,8 @@
             </select>
             {% else %}
             {% if var_key == 'collective_bargaining_coverage' %}
-            <select name="qual_{{ var_key }}_{{ y }}" class="cell-qual row-{{ var_key }}" onchange="updateLikertColor(this)"
+            <select name="qual_{{ var_key }}_{{ y }}" class="cell-qual row-{{ var_key }}"
+              onchange="updateLikertColor(this)"
               style="width:75px; padding:0.2rem; border:1px solid #ccc; border-radius:3px; font-size:0.75rem; text-align:center; {{ bg }}{% if row_mode == 'num' %} display:none;{% endif %}">
               <option value="">—</option>
               <option value="80-100%" {% if qual=='80-100%' %}selected{% endif %}>80–100%</option>
@@ -162,7 +192,8 @@
               <option value="0-19%" {% if qual=='0-19%' %}selected{% endif %}>0–19%</option>
             </select>
             {% elif var_key == 'avg_pay_increase' or var_key == 'avg_wage_increase' %}
-            <select name="qual_{{ var_key }}_{{ y }}" class="cell-qual row-{{ var_key }}" onchange="updateLikertColor(this)"
+            <select name="qual_{{ var_key }}_{{ y }}" class="cell-qual row-{{ var_key }}"
+              onchange="updateLikertColor(this)"
               style="width:75px; padding:0.2rem; border:1px solid #ccc; border-radius:3px; font-size:0.75rem; text-align:center; {{ bg }}{% if row_mode == 'num' %} display:none;{% endif %}">
               <option value="">—</option>
               <option value="strong increase" {% if qual=='strong increase' %}selected{% endif %}>Strong increase
@@ -175,7 +206,8 @@
               <option value="decrease" {% if qual=='decrease' %}selected{% endif %}>Decrease</option>
             </select>
             {% elif var_key == 'one_off_lump_sum' %}
-            <select name="qual_{{ var_key }}_{{ y }}" class="cell-qual row-{{ var_key }}" onchange="updateLikertColor(this)"
+            <select name="qual_{{ var_key }}_{{ y }}" class="cell-qual row-{{ var_key }}"
+              onchange="updateLikertColor(this)"
               style="width:75px; padding:0.2rem; border:1px solid #ccc; border-radius:3px; font-size:0.75rem; text-align:center; {{ bg }}{% if row_mode == 'num' %} display:none;{% endif %}">
               <option value="">—</option>
               <option value="very high" {% if qual=='very high' %}selected{% endif %}>Very high</option>
@@ -185,7 +217,8 @@
               <option value="none" {% if qual=='none' or qual=='very low' %}selected{% endif %}>None</option>
             </select>
             {% elif var_key == 'multi_employer_agreements' %}
-            <select name="qual_{{ var_key }}_{{ y }}" class="cell-qual row-{{ var_key }}" onchange="updateLikertColor(this)"
+            <select name="qual_{{ var_key }}_{{ y }}" class="cell-qual row-{{ var_key }}"
+              onchange="updateLikertColor(this)"
               style="width:75px; padding:0.2rem; border:1px solid #ccc; border-radius:3px; font-size:0.75rem; text-align:center; {{ bg }}{% if row_mode == 'num' %} display:none;{% endif %}">
               <option value="">—</option>
               <option value="many agreements / many employers" {% if qual=='many agreements / many employers' or
@@ -199,7 +232,8 @@
               <option value="no agreements" {% if qual=='no agreements' %}selected{% endif %}>No agreements</option>
             </select>
             {% elif var_key == 'single_employer_agreements' %}
-            <select name="qual_{{ var_key }}_{{ y }}" class="cell-qual row-{{ var_key }}" onchange="updateLikertColor(this)"
+            <select name="qual_{{ var_key }}_{{ y }}" class="cell-qual row-{{ var_key }}"
+              onchange="updateLikertColor(this)"
               style="width:75px; padding:0.2rem; border:1px solid #ccc; border-radius:3px; font-size:0.75rem; text-align:center; {{ bg }}{% if row_mode == 'num' %} display:none;{% endif %}">
               <option value="">—</option>
               <option value="very common" {% if qual=='very common' %}selected{% endif %}>Very common</option>
@@ -209,7 +243,8 @@
               <option value="none" {% if qual=='none' %}selected{% endif %}>None</option>
             </select>
             {% elif var_key == 'avg_monthly_wage' %}
-            <select name="qual_{{ var_key }}_{{ y }}" class="cell-qual row-{{ var_key }}" onchange="updateLikertColor(this)"
+            <select name="qual_{{ var_key }}_{{ y }}" class="cell-qual row-{{ var_key }}"
+              onchange="updateLikertColor(this)"
               style="width:75px; padding:0.2rem; border:1px solid #ccc; border-radius:3px; font-size:0.75rem; text-align:center; {{ bg }}{% if row_mode == 'num' %} display:none;{% endif %}">
               <option value="">—</option>
               <option value="very high" {% if qual=='very high' %}selected{% endif %}>Very high</option>
@@ -219,7 +254,8 @@
               <option value="very low" {% if qual=='very low' %}selected{% endif %}>Very low</option>
             </select>
             {% elif var_key == 'inflation_rate' %}
-            <select name="qual_{{ var_key }}_{{ y }}" class="cell-qual row-{{ var_key }}" onchange="updateLikertColor(this)"
+            <select name="qual_{{ var_key }}_{{ y }}" class="cell-qual row-{{ var_key }}"
+              onchange="updateLikertColor(this)"
               style="width:75px; padding:0.2rem; border:1px solid #ccc; border-radius:3px; font-size:0.75rem; text-align:center; {{ bg }}{% if row_mode == 'num' %} display:none;{% endif %}">
               <option value="">—</option>
               <option value="strong inflation (+3%)" {% if qual=='strong inflation (+3%)' or qual=='strong inflation'
@@ -234,7 +270,8 @@
                 %}selected{% endif %}>Strong deflation (-3%)</option>
             </select>
             {% elif var_key == 'sectoral_productivity' %}
-            <select name="qual_{{ var_key }}_{{ y }}" class="cell-qual row-{{ var_key }}" onchange="updateLikertColor(this)"
+            <select name="qual_{{ var_key }}_{{ y }}" class="cell-qual row-{{ var_key }}"
+              onchange="updateLikertColor(this)"
               style="width:75px; padding:0.2rem; border:1px solid #ccc; border-radius:3px; font-size:0.75rem; text-align:center; {{ bg }}{% if row_mode == 'num' %} display:none;{% endif %}">
               <option value="">—</option>
               <option value="strong growth" {% if qual=='strong growth' %}selected{% endif %}>Strong growth</option>
@@ -246,12 +283,12 @@
               <option value="strong decline" {% if qual=='strong decline' %}selected{% endif %}>Strong decline</option>
             </select>
             {% endif %}
-            {% set is_pct = var_key in ['collective_bargaining_coverage', 'avg_pay_increase', 'avg_wage_increase', 'inflation_rate', 'sectoral_productivity'] %}
+            {% set is_pct = var_key in ['collective_bargaining_coverage', 'avg_pay_increase', 'avg_wage_increase',
+            'inflation_rate', 'sectoral_productivity'] %}
             {% set is_eur = var_key in ['one_off_lump_sum', 'avg_monthly_wage'] %}
             <input type="text" name="value_{{ var_key }}_{{ y }}" value="{{ val }}" class="cell-num row-{{ var_key }}"
               style="width:75px; padding:0.25rem; border:1px solid #ccc; border-radius:3px; text-align:center; font-size:0.8rem; {{ bg }}{% if row_mode == 'qual' %} display:none;{% endif %}"
-              maxlength="15"
-              placeholder="{% if is_pct %}%{% elif is_eur %}€{% else %}#{% endif %}"
+              maxlength="15" placeholder="{% if is_pct %}%{% elif is_eur %}€{% else %}#{% endif %}"
               oninput="{% if is_pct %}validatePercentInput(this){% else %}validateIntegerInput(this){% endif %}">
             {% endif %}
           </td>
@@ -273,7 +310,7 @@
   </div>
 </form>
 
-<!-- Qualitative Reporting Input Form (Modal) -->
+{# Qualitative reporting modal dialog #}
 <div id="reportModalBackdrop" class="popup-backdrop" onclick="closeReportModal()">
   <div class="popup-card" style="max-width:550px;" onclick="event.stopPropagation()">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.8rem;">
@@ -286,8 +323,11 @@
       agreements, non-wage bargaining (training, employment, pensions), institutional and political factors,
       industrial action). Max 80 words.
     </p>
-    <label for="reportModalTitle" style="font-weight:600; margin-bottom:0.25rem; font-size:0.8rem; color:#444; display:block;">Short title / summary (optional):</label>
-    <input type="text" id="reportModalTitle" maxlength="60" placeholder="e.g. Pensions and wage framework" style="width:100%; padding:0.4rem; border:1px solid #ccc; border-radius:4px; font-size:0.85rem; margin-bottom:0.8rem; box-sizing:border-box;">
+    <label for="reportModalTitle"
+      style="font-weight:600; margin-bottom:0.25rem; font-size:0.8rem; color:#444; display:block;">Short title / summary
+      (optional):</label>
+    <input type="text" id="reportModalTitle" maxlength="60" placeholder="e.g. Pensions and wage framework"
+      style="width:100%; padding:0.4rem; border:1px solid #ccc; border-radius:4px; font-size:0.85rem; margin-bottom:0.8rem; box-sizing:border-box;">
     <div style="margin-bottom:0.3rem; display:flex; justify-content:space-between; font-size:0.75rem; color:#666;">
       <label for="reportModalTextarea" style="font-weight:600; margin:0;">Report text:</label>
       <span id="reportWordCountDisplay" style="font-weight:600;">0 / 80 words</span>
@@ -302,241 +342,254 @@
   </div>
 </div>
 
-<script>
-  var openYears = new Set();
-  openYears.add({{ default_open }});
+  <script>
+    {# Set of expanded year comment columns #}
+    var openYears = new Set();
+    openYears.add({{ default_open }});
 
-  var activeReportYear = null;
+    var activeReportYear = null;
 
-  function countWords(str) {
-    if (!str || !str.trim()) return 0;
-    return str.trim().split(/\s+/).filter(function (w) { return w.length > 0; }).length;
-  }
-
-  function handleReportInput(textarea) {
-    var val = textarea.value;
-    var words = val.trim().split(/\s+/).filter(function (w) { return w.length > 0; });
-    var count = (words.length === 1 && words[0] === "") ? 0 : words.length;
-    var display = document.getElementById('reportWordCountDisplay');
-
-    if (count > 80) {
-      var truncated = words.slice(0, 80).join(' ');
-      textarea.value = truncated;
-      count = 80;
-      if (display) {
-        display.textContent = '80 / 80 words (limit reached)';
-        display.style.color = '#c00';
-      }
-    } else {
-      if (display) {
-        display.textContent = count + ' / 80 words';
-        display.style.color = count >= 75 ? '#d97706' : '#666';
-      }
-    }
-  }
-
-  function openReportModal(y) {
-    if (!openYears.has(y)) {
-      return;
-    }
-    activeReportYear = y;
-    document.getElementById('reportModalHeader').textContent = 'Qualitative reporting — ' + y;
-    var hiddenInput = document.getElementById('hiddenReport_' + y);
-    var fullVal = hiddenInput ? hiddenInput.value : '';
-    var title = '';
-    var content = fullVal;
-    if (fullVal.indexOf('\n') !== -1) {
-      var parts = fullVal.split('\n');
-      title = parts[0];
-      content = parts.slice(1).join('\n');
-    }
-    document.getElementById('reportModalTitle').value = title;
-    var textarea = document.getElementById('reportModalTextarea');
-    textarea.value = content;
-    handleReportInput(textarea);
-    document.getElementById('reportModalBackdrop').style.display = 'flex';
-    setTimeout(function () { document.getElementById('reportModalTitle').focus(); }, 100);
-  }
-
-  function closeReportModal() {
-    document.getElementById('reportModalBackdrop').style.display = 'none';
-    activeReportYear = null;
-  }
-
-  function saveReportModal() {
-    if (!activeReportYear) return;
-    var y = activeReportYear;
-    var title = document.getElementById('reportModalTitle').value.trim();
-    var textarea = document.getElementById('reportModalTextarea');
-    var text = textarea.value.trim();
-
-    var words = text.split(/\s+/).filter(function (w) { return w.length > 0; });
-    if (words.length > 80) {
-      text = words.slice(0, 80).join(' ');
-      words = words.slice(0, 80);
-    }
-    var count = (words.length === 1 && words[0] === "") ? 0 : words.length;
-
-    var combined = text;
-    if (title && text) {
-      combined = title + '\n' + text;
-    } else if (title && !text) {
-      combined = title;
+    {# Word count calculation #}
+    function countWords(str) {
+      if (!str || !str.trim()) return 0;
+      return str.trim().split(/\s+/).filter(function (w) { return w.length > 0; }).length;
     }
 
-    var hiddenInput = document.getElementById('hiddenReport_' + y);
-    if (hiddenInput) {
-      hiddenInput.value = combined;
-    }
+    {# Modal live word counter and truncation for 80-word limit #}
+    function handleReportInput(textarea) {
+      var val = textarea.value;
+      var words = val.trim().split(/\s+/).filter(function (w) { return w.length > 0; });
+      var count = (words.length === 1 && words[0] === "") ? 0 : words.length;
+      var display = document.getElementById('reportWordCountDisplay');
 
-    var btnText = document.getElementById('reportBtnText_' + y);
-    var btn = document.getElementById('reportBtn_' + y);
-    if (btnText) {
-      if (title) {
-        var shortTitle = title.length > 20 ? (title.substring(0, 20) + '…') : title;
-        btnText.textContent = shortTitle;
-      } else if (count > 0) {
-        btnText.innerHTML = '<strong>' + count + '</strong> word' + (count !== 1 ? 's' : '');
+      if (count > 80) {
+        var truncated = words.slice(0, 80).join(' ');
+        textarea.value = truncated;
+        count = 80;
+        if (display) {
+          display.textContent = '80 / 80 words (limit reached)';
+          display.style.color = '#c00';
+        }
       } else {
-        btnText.innerHTML = '<span style="color:inherit; opacity:0.75;">no input</span>';
+        if (display) {
+          display.textContent = count + ' / 80 words';
+          display.style.color = count >= 75 ? '#d97706' : '#666';
+        }
       }
     }
-    if (btn) {
-      var tooltip = text ? (title ? (title + '\n\n' + text) : text) : title;
-      if (tooltip) {
-        btn.setAttribute('data-def', tooltip);
+
+    {# Open qualitative reporting modal for specified year #}
+    function openReportModal(y) {
+      activeReportYear = y;
+      document.getElementById('reportModalHeader').textContent = 'Qualitative reporting — ' + y;
+      var titleEl = document.getElementById('hiddenReportTitle_' + y);
+      var contentEl = document.getElementById('hiddenReportContent_' + y);
+      var title = titleEl ? titleEl.value : '';
+      var content = contentEl ? contentEl.value : '';
+      if (!title && !content) {
+        var hiddenInput = document.getElementById('hiddenReport_' + y);
+        var fullVal = hiddenInput ? hiddenInput.value : '';
+        if (fullVal.indexOf('\n') !== -1) {
+          var parts = fullVal.split('\n');
+          title = parts[0];
+          content = parts.slice(1).join('\n');
+        } else {
+          content = fullVal;
+        }
+      }
+      document.getElementById('reportModalTitle').value = title;
+      var textarea = document.getElementById('reportModalTextarea');
+      textarea.value = content;
+      handleReportInput(textarea);
+      document.getElementById('reportModalBackdrop').style.display = 'flex';
+      setTimeout(function () { document.getElementById('reportModalTitle').focus(); }, 100);
+    }
+
+    {# Close qualitative reporting modal without saving changes #}
+    function closeReportModal() {
+      document.getElementById('reportModalBackdrop').style.display = 'none';
+      activeReportYear = null;
+    }
+
+    {# Save qualitative reporting modal inputs and trigger auto-save #}
+    function saveReportModal() {
+      if (!activeReportYear) return;
+      var y = activeReportYear;
+      var title = document.getElementById('reportModalTitle').value.trim();
+      var textarea = document.getElementById('reportModalTextarea');
+      var text = textarea.value.trim();
+
+      var words = text.split(/\s+/).filter(function (w) { return w.length > 0; });
+      if (words.length > 80) {
+        text = words.slice(0, 80).join(' ');
+        words = words.slice(0, 80);
+      }
+      var count = (words.length === 1 && words[0] === "") ? 0 : words.length;
+
+      var combined = '';
+      if (title || text) {
+        combined = title + '\n' + text;
+      }
+
+      var titleEl = document.getElementById('hiddenReportTitle_' + y);
+      var contentEl = document.getElementById('hiddenReportContent_' + y);
+      var hiddenInput = document.getElementById('hiddenReport_' + y);
+      if (titleEl) titleEl.value = title;
+      if (contentEl) contentEl.value = text;
+      if (hiddenInput) hiddenInput.value = combined;
+
+      var btnText = document.getElementById('reportBtnText_' + y);
+      var btn = document.getElementById('reportBtn_' + y);
+      if (btnText) {
+        if (title) {
+          var shortTitle = title.length > 20 ? (title.substring(0, 20) + '…') : title;
+          btnText.textContent = shortTitle;
+        } else if (count > 0) {
+          btnText.innerHTML = '<strong>' + count + '</strong> word' + (count !== 1 ? 's' : '');
+        } else {
+          btnText.innerHTML = '<span style="color:inherit; opacity:0.75;">no input</span>';
+        }
+      }
+      if (btn) {
+        var tooltip = text ? (title ? (title + '\n\n' + text) : text) : title;
+        if (tooltip) {
+          btn.setAttribute('data-def', tooltip);
+        } else {
+          btn.removeAttribute('data-def');
+        }
+      }
+
+      closeReportModal();
+      if (typeof autoSaveCurrentForm === 'function') {
+        autoSaveCurrentForm();
+      }
+    }
+
+    {# Likert scale response color mapping #}
+    var LIKERT_COLOR_MAP = {
+      "very favourable": "rgba(250, 204, 21, 0.45)", "80-100%": "rgba(250, 204, 21, 0.45)", "80–100%": "rgba(250, 204, 21, 0.45)",
+      "strong increase": "rgba(250, 204, 21, 0.45)", "very high": "rgba(250, 204, 21, 0.45)",
+      "many agreements / many employers": "rgba(250, 204, 21, 0.45)", "very common": "rgba(250, 204, 21, 0.45)",
+      "strong inflation (+3%)": "rgba(250, 204, 21, 0.45)", "strong growth": "rgba(250, 204, 21, 0.45)",
+      "rather favourable": "rgba(234, 179, 8, 0.30)", "60-79%": "rgba(234, 179, 8, 0.30)", "60–79%": "rgba(234, 179, 8, 0.30)",
+      "moderate increase": "rgba(234, 179, 8, 0.30)", "high": "rgba(234, 179, 8, 0.30)",
+      "many agreements / few employers": "rgba(234, 179, 8, 0.30)", "common": "rgba(234, 179, 8, 0.30)",
+      "minor inflation (+1/+3%)": "rgba(234, 179, 8, 0.30)", "moderate growth": "rgba(234, 179, 8, 0.30)",
+      "neutral": "rgba(132, 204, 22, 0.22)", "40-59%": "rgba(132, 204, 22, 0.22)", "40–59%": "rgba(132, 204, 22, 0.22)",
+      "minimal increase": "rgba(132, 204, 22, 0.22)", "moderate": "rgba(132, 204, 22, 0.22)", "average": "rgba(132, 204, 22, 0.22)",
+      "few agreements / many employers": "rgba(132, 204, 22, 0.22)", "rare": "rgba(132, 204, 22, 0.22)",
+      "normal": "rgba(132, 204, 22, 0.22)", "stable prices (+1/-1%)": "rgba(132, 204, 22, 0.22)", "no growth": "rgba(132, 204, 22, 0.22)",
+      "rather unfavourable": "rgba(14, 165, 233, 0.25)", "20-39%": "rgba(14, 165, 233, 0.25)", "20–39%": "rgba(14, 165, 233, 0.25)",
+      "no increase": "rgba(14, 165, 233, 0.25)", "low": "rgba(14, 165, 233, 0.25)",
+      "few agreements / few employers": "rgba(14, 165, 233, 0.25)", "very rare": "rgba(14, 165, 233, 0.25)",
+      "minor deflation (-1/-3%)": "rgba(14, 165, 233, 0.25)", "moderate decline": "rgba(14, 165, 233, 0.25)",
+      "very unfavourable": "rgba(37, 99, 235, 0.35)", "0-19%": "rgba(37, 99, 235, 0.35)", "0–19%": "rgba(37, 99, 235, 0.35)",
+      "decrease": "rgba(37, 99, 235, 0.35)", "none": "rgba(37, 99, 235, 0.35)", "very low": "rgba(37, 99, 235, 0.35)",
+      "no agreements": "rgba(37, 99, 235, 0.35)", "strong deflation (-3%)": "rgba(37, 99, 235, 0.35)", "strong decline": "rgba(37, 99, 235, 0.35)"
+    };
+
+    function updateLikertColor(selectEl) {
+      var val = (selectEl.value || '').trim().toLowerCase();
+      var color = LIKERT_COLOR_MAP[val];
+      if (color) {
+        selectEl.style.backgroundColor = color;
       } else {
-        btn.removeAttribute('data-def');
+        selectEl.style.backgroundColor = '';
       }
     }
 
-    closeReportModal();
-  }
+    {# Expand or collapse comment column for given year #}
+    function toggleYear(y) {
+      var col = document.getElementById('cmtCol' + y);
+      var opened = openYears.has(y);
+      var cmtCells = document.querySelectorAll('[id^="cmtCell"][id$="_' + y + '"]');
+      var cmtHead = document.getElementById('cmtHead' + y);
+      var reportCell = document.getElementById('reportCell_' + y);
+      var yHead = document.getElementById('yearHead' + y);
+      var reportBtn = document.getElementById('reportBtn_' + y);
 
-  var LIKERT_COLOR_MAP = {
-    "very favourable": "rgba(250, 204, 21, 0.45)", "80-100%": "rgba(250, 204, 21, 0.45)", "80–100%": "rgba(250, 204, 21, 0.45)",
-    "strong increase": "rgba(250, 204, 21, 0.45)", "very high": "rgba(250, 204, 21, 0.45)",
-    "many agreements / many employers": "rgba(250, 204, 21, 0.45)", "very common": "rgba(250, 204, 21, 0.45)",
-    "strong inflation (+3%)": "rgba(250, 204, 21, 0.45)", "strong growth": "rgba(250, 204, 21, 0.45)",
-    "rather favourable": "rgba(234, 179, 8, 0.30)", "60-79%": "rgba(234, 179, 8, 0.30)", "60–79%": "rgba(234, 179, 8, 0.30)",
-    "moderate increase": "rgba(234, 179, 8, 0.30)", "high": "rgba(234, 179, 8, 0.30)",
-    "many agreements / few employers": "rgba(234, 179, 8, 0.30)", "common": "rgba(234, 179, 8, 0.30)",
-    "minor inflation (+1/+3%)": "rgba(234, 179, 8, 0.30)", "moderate growth": "rgba(234, 179, 8, 0.30)",
-    "neutral": "rgba(132, 204, 22, 0.22)", "40-59%": "rgba(132, 204, 22, 0.22)", "40–59%": "rgba(132, 204, 22, 0.22)",
-    "minimal increase": "rgba(132, 204, 22, 0.22)", "moderate": "rgba(132, 204, 22, 0.22)", "average": "rgba(132, 204, 22, 0.22)",
-    "few agreements / many employers": "rgba(132, 204, 22, 0.22)", "rare": "rgba(132, 204, 22, 0.22)",
-    "normal": "rgba(132, 204, 22, 0.22)", "stable prices (+1/-1%)": "rgba(132, 204, 22, 0.22)", "no growth": "rgba(132, 204, 22, 0.22)",
-    "rather unfavourable": "rgba(14, 165, 233, 0.25)", "20-39%": "rgba(14, 165, 233, 0.25)", "20–39%": "rgba(14, 165, 233, 0.25)",
-    "no increase": "rgba(14, 165, 233, 0.25)", "low": "rgba(14, 165, 233, 0.25)",
-    "few agreements / few employers": "rgba(14, 165, 233, 0.25)", "very rare": "rgba(14, 165, 233, 0.25)",
-    "minor deflation (-1/-3%)": "rgba(14, 165, 233, 0.25)", "moderate decline": "rgba(14, 165, 233, 0.25)",
-    "very unfavourable": "rgba(37, 99, 235, 0.35)", "0-19%": "rgba(37, 99, 235, 0.35)", "0–19%": "rgba(37, 99, 235, 0.35)",
-    "decrease": "rgba(37, 99, 235, 0.35)", "none": "rgba(37, 99, 235, 0.35)", "very low": "rgba(37, 99, 235, 0.35)",
-    "no agreements": "rgba(37, 99, 235, 0.35)", "strong deflation (-3%)": "rgba(37, 99, 235, 0.35)", "strong decline": "rgba(37, 99, 235, 0.35)"
-  };
-
-  function updateLikertColor(selectEl) {
-    var val = (selectEl.value || '').trim().toLowerCase();
-    var color = LIKERT_COLOR_MAP[val];
-    if (color) {
-      selectEl.style.backgroundColor = color;
-    } else {
-      selectEl.style.backgroundColor = '';
+      if (opened) {
+        openYears.delete(y);
+        col.style.width = '0';
+        col.style.minWidth = '0';
+        cmtCells.forEach(function (c) { c.style.display = 'none'; });
+        if (cmtHead) cmtHead.style.display = 'none';
+        setCommentsData(y, true);
+        if (yHead) yHead.setAttribute('colspan', '1');
+        if (reportCell) reportCell.setAttribute('colspan', '1');
+      } else {
+        openYears.add(y);
+        col.style.width = '';
+        col.style.minWidth = '150px';
+        cmtCells.forEach(function (c) { c.style.display = ''; });
+        if (cmtHead) cmtHead.style.display = '';
+        setCommentsData(y, false);
+        if (yHead) yHead.setAttribute('colspan', '2');
+        if (reportCell) reportCell.setAttribute('colspan', '2');
+      }
     }
-  }
 
-  function toggleYear(y) {
-    var col = document.getElementById('cmtCol' + y);
-    var opened = openYears.has(y);
-    var cmtCells = document.querySelectorAll('[id^="cmtCell"][id$="_' + y + '"]');
-    var cmtHead = document.getElementById('cmtHead' + y);
-    var reportCell = document.getElementById('reportCell_' + y);
-    var yHead = document.getElementById('yearHead' + y);
-    var reportBtn = document.getElementById('reportBtn_' + y);
+    {# Sync tooltip attributes when comment columns are hidden #}
+    function setCommentsData(y, showTooltip) {
+      document.querySelectorAll('[id^="cmtCell"][id$="_' + y + '"]').forEach(function (el) {
+        var cmtInput = el.querySelector('input');
+        var cmt = cmtInput ? cmtInput.value.trim() : '';
+        var valCell = el.previousElementSibling;
+        if (valCell) {
+          if (showTooltip && cmt) valCell.setAttribute('data-cmt', cmt);
+          else valCell.removeAttribute('data-cmt');
+        }
+      });
 
-    if (opened) {
-      openYears.delete(y);
-      col.style.width = '0';
-      col.style.minWidth = '0';
-      cmtCells.forEach(function (c) { c.style.display = 'none'; });
-      if (cmtHead) cmtHead.style.display = 'none';
-      setCommentsData(y, true);
-      if (yHead) yHead.setAttribute('colspan', '1');
-      if (reportCell) reportCell.setAttribute('colspan', '1');
-      if (reportBtn) reportBtn.classList.remove('active-editing');
-    } else {
-      openYears.add(y);
-      col.style.width = '';
-      col.style.minWidth = '150px';
-      cmtCells.forEach(function (c) { c.style.display = ''; });
-      if (cmtHead) cmtHead.style.display = '';
-      setCommentsData(y, false);
-      if (yHead) yHead.setAttribute('colspan', '2');
-      if (reportCell) reportCell.setAttribute('colspan', '2');
-      if (reportBtn) reportBtn.classList.add('active-editing');
+      var hiddenReport = document.getElementById('hiddenReport_' + y);
+      var reportBtn = document.getElementById('reportBtn_' + y);
+      if (hiddenReport && reportBtn) {
+        var cmt = hiddenReport.value.trim();
+        if (cmt) {
+          reportBtn.setAttribute('data-cmt', cmt);
+        } else {
+          reportBtn.removeAttribute('data-cmt');
+        }
+      }
     }
-  }
 
-  function setCommentsData(y, showTooltip) {
-    document.querySelectorAll('[id^="cmtCell"][id$="_' + y + '"]').forEach(function (el) {
-      var cmtInput = el.querySelector('input');
-      var cmt = cmtInput ? cmtInput.value.trim() : '';
-      var valCell = el.previousElementSibling;
-      if (valCell) {
-        if (showTooltip && cmt) valCell.setAttribute('data-cmt', cmt);
-        else valCell.removeAttribute('data-cmt');
+    {# Toggle between numeric Detail mode and Likert scale Proxy mode #}
+    function toggleRow(btn) {
+      var tr = btn.closest('tr');
+      var varKey = tr.getAttribute('data-var');
+      var isDetail = btn.textContent.trim() === 'detail';
+      var nums = tr.querySelectorAll('.cell-num');
+      var quals = tr.querySelectorAll('.cell-qual');
+      var modeInput = document.getElementById('rowMode_' + varKey);
+
+      if (isDetail) {
+        nums.forEach(function (el) { el.style.display = 'none'; });
+        quals.forEach(function (el) { el.style.display = ''; });
+        btn.textContent = 'proxy';
+        btn.title = 'Click to switch to detail mode';
+        if (modeInput) modeInput.value = 'qual';
+      } else {
+        nums.forEach(function (el) { el.style.display = ''; });
+        quals.forEach(function (el) { el.style.display = 'none'; });
+        btn.textContent = 'detail';
+        btn.title = 'Click to switch to proxy mode';
+        if (modeInput) modeInput.value = 'num';
+      }
+    }
+
+    {# Initialize column widths and collapsed year headers #}
+    document.querySelectorAll('[id^="cmtCol"]').forEach(function (col) {
+      if (col.style.width === '0' || col.style.width === '0px') {
+        var y = parseInt(col.id.replace('cmtCol', ''));
+        setCommentsData(y, true);
+        document.querySelectorAll('[id^="cmtCell"][id$="_' + y + '"]').forEach(function (c) { c.style.display = 'none'; });
+        var cmtHead = document.getElementById('cmtHead' + y);
+        if (cmtHead) cmtHead.style.display = 'none';
+        var yHead = document.getElementById('yearHead' + y);
+        if (yHead) yHead.setAttribute('colspan', '1');
+        var reportCell = document.getElementById('reportCell_' + y);
+        if (reportCell) reportCell.setAttribute('colspan', '1');
       }
     });
-
-    var hiddenReport = document.getElementById('hiddenReport_' + y);
-    var reportBtn = document.getElementById('reportBtn_' + y);
-    if (hiddenReport && reportBtn) {
-      var cmt = hiddenReport.value.trim();
-      if (cmt) {
-        reportBtn.setAttribute('data-cmt', cmt);
-      } else {
-        reportBtn.removeAttribute('data-cmt');
-      }
-    }
-  }
-
-  function toggleRow(btn) {
-    var tr = btn.closest('tr');
-    var varKey = tr.getAttribute('data-var');
-    var isDetail = btn.textContent.trim() === 'detail';
-    var nums = tr.querySelectorAll('.cell-num');
-    var quals = tr.querySelectorAll('.cell-qual');
-    var modeInput = document.getElementById('rowMode_' + varKey);
-
-    if (isDetail) {
-      nums.forEach(function (el) { el.style.display = 'none'; });
-      quals.forEach(function (el) { el.style.display = ''; });
-      btn.textContent = 'proxy';
-      btn.title = 'Click to switch to detail mode';
-      if (modeInput) modeInput.value = 'qual';
-    } else {
-      nums.forEach(function (el) { el.style.display = ''; });
-      quals.forEach(function (el) { el.style.display = 'none'; });
-      btn.textContent = 'detail';
-      btn.title = 'Click to switch to proxy mode';
-      if (modeInput) modeInput.value = 'num';
-    }
-  }
-
-  document.querySelectorAll('[id^="cmtCol"]').forEach(function (col) {
-    if (col.style.width === '0' || col.style.width === '0px') {
-      var y = parseInt(col.id.replace('cmtCol', ''));
-      setCommentsData(y, true);
-      document.querySelectorAll('[id^="cmtCell"][id$="_' + y + '"]').forEach(function (c) { c.style.display = 'none'; });
-      var cmtHead = document.getElementById('cmtHead' + y);
-      if (cmtHead) cmtHead.style.display = 'none';
-      var yHead = document.getElementById('yearHead' + y);
-      if (yHead) yHead.setAttribute('colspan', '1');
-      var reportCell = document.getElementById('reportCell_' + y);
-      if (reportCell) reportCell.setAttribute('colspan', '1');
-      var reportBtn = document.getElementById('reportBtn_' + y);
-      if (reportBtn) reportBtn.classList.remove('active-editing');
-    }
-  });
-</script>
+  </script>
 {% endblock %}
