@@ -1,0 +1,46 @@
+# ==============================================================================
+# PUBLIC website repo. Anything not ignored here is public.
+# ==============================================================================
+
+# Runtime data, databases, exports (never public)
+data/
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Real user list (contains login pincodes). Use seeds/users.example.csv as template.
+seeds/users.csv
+
+# Secrets
+.env
+.env.*
+*.pem
+*.key
+push.sh
+dockerlogin.sh
+ftp.sh
+filezilla.sh
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# OS / editor
+.DS_Store
+._*
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*~
+kmk
+*.log

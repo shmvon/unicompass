@@ -1,0 +1,330 @@
+{% extends "layout.html" %}
+{% block title %}— Major Companies{% endblock %}
+{% block content %}
+{# Admin viewing indicator banner #}
+{% if is_admin and view_org == 'None' %}
+<p class="viewing-banner">Viewing as: <strong>Unaffiliated (Admin)</strong></p>
+{% elif view_org and view_org != session_org and view_org != 'None' %}
+<p class="viewing-banner">Viewing: <strong>{{ view_org }}</strong></p>
+{% endif %}
+
+{# Page introduction #}
+<div class="page-intro">
+  <p>Enter data from the largest companies within the sector. Entries are auto-sorted by number of workers.</p>
+</div>
+
+{# Major companies entry form #}
+<form method="POST" id="companies-form" class="data-entry-form">
+  {% if view_org and view_org != 'None' %}<input type="hidden" name="org" value="{{ view_org }}">{% endif %}
+  <input type="hidden" name="year" value="{{ selected_year }}">
+
+  {# Year selector dropdown #}
+  <div class="filter-bar">
+    <label for="year-select">Year:</label>
+    <select id="year-select" onchange="onYearChange(this.value)">
+      {% for y in years|sort(reverse=true) %}
+      <option value="{{ y }}" {% if y==selected_year %}selected{% endif %}>{{ y }}</option>
+      {% endfor %}
+    </select>
+    <noscript><a href="?year={{ selected_year }}" style="margin-left:0.5rem;">Reload</a></noscript>
+  </div>
+
+  {% set initial_rows = 5 %}
+
+  {# Data entry table for up to 10 companies #}
+  <div class="table-wrap fixed-rows">
+    <table class="data-table" style="border-collapse:collapse; width:100%; font-size:0.85rem; border:none;">
+      <colgroup>
+        <col style="width:2.5rem; min-width:2.5rem;">
+        <col style="width:160px; min-width:160px;">
+        <col style="width:70px; min-width:70px;">
+        <col style="width:60px; min-width:60px;">
+        <col style="width:145px; min-width:145px;">
+        <col style="width:55px; min-width:55px;">
+        <col style="width:85px; min-width:85px;">
+        <col style="width:60px; min-width:60px;">
+        <col style="width:60px; min-width:60px;">
+        <col style="width:140px; min-width:140px;">
+      </colgroup>
+      <thead>
+        <tr>
+          <th class="sticky-col-1 tbl-header">#</th>
+          <th class="sticky-col-2 tbl-header left" style="text-align:left;">Company name</th>
+          <th class="tbl-header">
+            <span class="var-def"
+              data-def="Number of workers active in all national establishments of the company combined.">Workers</span>
+          </th>
+          <th class="tbl-header">
+            <span class="var-def" data-def="Is this organisation part of a multi-national company (MNC)?">MNC</span>
+          </th>
+          <th class="tbl-header">
+            <span class="var-def"
+              data-def="Is there a collective labour agreement (CLA) on wages this company is subject to, and if so, at what level?">CLA</span>
+          </th>
+          <th class="tbl-header">
+            <span class="var-def" data-def="Number of active trade unions represented in the company.">Unions</span>
+          </th>
+          <th class="tbl-header">
+            <span class="var-def"
+              data-def="Share of workers of all national establishments that are a member of any trade union.">Union
+              density</span>
+          </th>
+          <th class="tbl-header">
+            <span class="var-def"
+              data-def="Whether there is a worker representation body (e.g. works council, shop stewards).">Representation</span>
+          </th>
+          <th class="tbl-header">
+            <span class="var-def" data-def="EWC = European works council">EWC</span>
+          </th>
+          <th class="tbl-header">
+            <span class="var-def" data-def="Comments. Max. 40 words.">Comments</span>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        {# Loop through up to 10 company slots #}
+        {% for i in range(10) %}
+        {% set row = saved[i] if i < saved|length else {} %} <tr class="company-row" {% if i>= initial_rows
+          %}style="display:none;"{% endif %}>
+          {# Row index #}
+          <td class="sticky-col-1 tbl-cell num-muted">{{ i + 1 }}</td>
+
+          {# Company name #}
+          <td class="sticky-col-2 tbl-cell left" style="text-align:left;">
+            <input type="text" name="company_name_{{ i }}" value="{{ row.get('company_name', '') }}" class="input-cell"
+              style="width:100%; box-sizing:border-box;" maxlength="200">
+          </td>
+
+          {# Workers count #}
+          <td class="tbl-cell center">
+            <input type="text" name="workers_{{ i }}"
+              value="{{ row.get('workers') if row.get('workers') is not none else '' }}" class="input-cell-center"
+              style="width:65px;" placeholder="#" maxlength="20" oninput="validateIntegerInput(this)">
+          </td>
+
+          {# MNC presence #}
+          <td class="tbl-cell center">
+            <select name="mnc_{{ i }}" class="input-cell">
+              <option value="">—</option>
+              <option value="yes" {% if row.get('mnc')=='yes' %}selected{% endif %}>Yes</option>
+              <option value="no" {% if row.get('mnc')=='no' %}selected{% endif %}>No</option>
+            </select>
+          </td>
+
+          {# Collective agreement presence #}
+          <!-- I lowercased the options-->
+          <td class="tbl-cell center">
+            <select name="agreement_{{ i }}" class="input-cell">
+              <option value="">—</option>
+              <option value="No CLA" {% if row.get('agreement')=='No CLA' %}selected{% endif %}>No CLA</option>
+              <option value="Single-employer CLA" {% if row.get('agreement')=='Single-employer CLA' %}selected{% endif
+                %}>Single-employer CLA</option>
+              <option value="Multi-employer CLA" {% if row.get('agreement')=='Multi-employer CLA' %}selected{% endif %}>
+                Multi-employer CLA</option>
+              <option value="Sectoral CLA" {% if row.get('agreement')=='Sectoral CLA' %}selected{% endif %}>Sectoral CLA
+              </option>
+            </select>
+          </td>
+
+          {# Number of trade unions #}
+          <td class="tbl-cell center">
+            <input type="text" name="number_of_unions_{{ i }}"
+              value="{{ row.get('number_of_unions') if row.get('number_of_unions') is not none else '' }}"
+              class="input-cell-center" style="width:55px;" placeholder="#" maxlength="20"
+              oninput="validateIntegerInput(this)">
+          </td>
+
+          {# Union density range #}
+          <td class="tbl-cell center">
+            <select name="union_density_{{ i }}" class="input-cell">
+              <option value="">—</option>
+              <option value="< 10%" {% if row.get('union_density')=='< 10%' %}selected{% endif %}>&lt; 10%</option>
+              <option value="10-24%" {% if row.get('union_density')=='10-24%' %}selected{% endif %}>10-24%</option>
+              <option value="25-49%" {% if row.get('union_density')=='25-49%' %}selected{% endif %}>25-49%</option>
+              <option value="50-74%" {% if row.get('union_density')=='50-74%' %}selected{% endif %}>50-74%</option>
+              <option value="75-89%" {% if row.get('union_density')=='75-89%' %}selected{% endif %}>75-89%</option>
+              <option value="90%+" {% if row.get('union_density')=='90%+' %}selected{% endif %}>90%+</option>
+            </select>
+          </td>
+
+          {# Worker representation body presence #}
+          <td class="tbl-cell center">
+            <select name="worker_representation_{{ i }}" class="input-cell">
+              <option value="">—</option>
+              <option value="yes" {% if row.get('worker_representation')=='yes' %}selected{% endif %}>Yes</option>
+              <option value="no" {% if row.get('worker_representation')=='no' %}selected{% endif %}>No</option>
+            </select>
+          </td>
+
+          {# European works council presence #}
+          <td class="tbl-cell center">
+            <select name="ewc_presence_{{ i }}" class="input-cell">
+              <option value="">—</option>
+              <option value="yes" {% if row.get('ewc_presence')=='yes' %}selected{% endif %}>Yes</option>
+              <option value="no" {% if row.get('ewc_presence')=='no' %}selected{% endif %}>No</option>
+            </select>
+          </td>
+
+          {# Comments modal popup trigger #}
+          {% set _cmt_raw = row.get('comment', '') %}
+          {% set _cmt_parts = _cmt_raw.split('\n', 1) if _cmt_raw else [] %}
+          {% set _cmt_title = _cmt_parts[0] if _cmt_parts|length > 1 else '' %}
+          {% set _cmt_content = _cmt_parts[1] if _cmt_parts|length > 1 else (_cmt_parts[0] if _cmt_parts|length == 1
+          else '') %}
+          {% set _cmt_words = _cmt_content.strip().split() if _cmt_content else [] %}
+          {% set _cmt_count = _cmt_words|length %}
+          <td class="tbl-cell center" style="padding:0.2rem; text-align:center;">
+            <button type="button" class="report-btn active-editing" id="popupBtn_comment_{{ i }}"
+              onclick="openPopup('comment_{{ i }}', 40)" {% if _cmt_raw
+              %}data-def="{{ (_cmt_title + '\n\n' + _cmt_content) if _cmt_title and _cmt_content else _cmt_raw }}" {%
+              endif %}>
+              <span id="popupTitle_comment_{{ i }}">
+                {% if _cmt_title %}
+                {{ (_cmt_title[:20] ~ '…') if _cmt_title|length > 20 else _cmt_title }}
+                {% elif _cmt_count > 0 %}
+                <strong>{{ _cmt_count }}</strong> word{{ 's' if _cmt_count != 1 else '' }}
+                {% else %}
+                <span style="color:inherit; opacity:0.75;">no input</span>
+                {% endif %}
+              </span>
+            </button>
+            <input type="hidden" name="comment_title_{{ i }}" id="hiddenTitle_comment_{{ i }}" value="{{ _cmt_title }}">
+            <input type="hidden" name="comment_content_{{ i }}" id="hiddenContent_comment_{{ i }}"
+              value="{{ _cmt_content }}">
+          </td>
+          </tr>
+          {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {# Row control buttons: Add row and Remove row #}
+  <div style="margin-top:0.5rem; display:flex; align-items:center; gap:0.4rem;">
+    <span id="addCompanyRow" class="add-row-btn" onclick="addCompanyRow()">+ Add row</span>
+    <span id="removeCompanyRow" class="remove-row-btn" onclick="removeCompanyRow()" style="display:none;">- Remove
+      row</span>
+  </div>
+
+  {% if enable_save_button %}
+  {# Form save button #}
+  <div class="form-actions">
+    <button type="submit" class="btn-save">Save</button>
+  </div>
+  {% endif %}
+</form>
+
+<script>
+  {# Dynamic row addition & removal handlers #}
+  var companyTotal = 10;
+
+  function isCompanyRowEmpty(rowIndex) {
+    var rows = document.querySelectorAll('.company-row');
+    var row = rows[rowIndex];
+    if (!row) return true;
+    var nameInput = row.querySelector('input[name^="company_name_"]');
+    var workersInput = row.querySelector('input[name^="workers_"]');
+    var mncSelect = row.querySelector('select[name^="mnc_"]');
+    var claSelect = row.querySelector('select[name^="agreement_"]');
+    var unionsInput = row.querySelector('input[name^="number_of_unions_"]');
+    var densitySelect = row.querySelector('select[name^="union_density_"]');
+    var reprSelect = row.querySelector('select[name^="worker_representation_"]');
+    var ewcSelect = row.querySelector('select[name^="ewc_presence_"]');
+    var cmtTitle = row.querySelector('input[name^="comment_title_"]');
+    var cmtContent = row.querySelector('input[name^="comment_content_"]');
+
+    if (nameInput && nameInput.value.trim() !== '') return false;
+    if (workersInput && workersInput.value.trim() !== '') return false;
+    if (mncSelect && mncSelect.value.trim() !== '') return false;
+    if (claSelect && claSelect.value.trim() !== '') return false;
+    if (unionsInput && unionsInput.value.trim() !== '') return false;
+    if (densitySelect && densitySelect.value.trim() !== '') return false;
+    if (reprSelect && reprSelect.value.trim() !== '') return false;
+    if (ewcSelect && ewcSelect.value.trim() !== '') return false;
+    if (cmtTitle && cmtTitle.value.trim() !== '') return false;
+    if (cmtContent && cmtContent.value.trim() !== '') return false;
+    return true;
+  }
+
+  // Count how many rows have data, default to 5
+  var companyRowCount = 5;
+  var _allCompRows = document.querySelectorAll('.company-row');
+  for (var i = _allCompRows.length - 1; i >= 5; i--) {
+    if (!isCompanyRowEmpty(i)) {
+      companyRowCount = i + 1;
+      break;
+    }
+  }
+
+  function updateCompanyRowButtons() {
+    var addBtn = document.getElementById('addCompanyRow');
+    var removeBtn = document.getElementById('removeCompanyRow');
+    if (addBtn) {
+      addBtn.style.display = companyRowCount < companyTotal ? 'inline-block' : 'none';
+    }
+    if (removeBtn) {
+      var canRemove = companyRowCount > 1 && isCompanyRowEmpty(companyRowCount - 1);
+      removeBtn.style.display = canRemove ? 'inline-block' : 'none';
+    }
+  }
+
+  function addCompanyRow() {
+    if (companyRowCount >= companyTotal) return;
+    var rows = document.querySelectorAll('.company-row');
+    if (rows[companyRowCount]) rows[companyRowCount].style.display = '';
+    companyRowCount++;
+    updateCompanyRowButtons();
+  }
+
+  function removeCompanyRow() {
+    if (companyRowCount <= 1) return;
+    var lastIndex = companyRowCount - 1;
+    var rows = document.querySelectorAll('.company-row');
+    var row = rows[lastIndex];
+    if (row) {
+      if (!isCompanyRowEmpty(lastIndex)) {
+        alert('The last row is not empty. Please clear its contents first if you want to remove it.');
+        return;
+      }
+      row.querySelectorAll('input, select, textarea').forEach(function (el) { el.value = ''; });
+      var popups = row.querySelectorAll('.report-btn');
+      popups.forEach(function (btn) {
+        btn.removeAttribute('data-def');
+        var span = btn.querySelector('span');
+        if (span) span.innerHTML = '<span style="color:inherit; opacity:0.75;">no input</span>';
+      });
+      row.style.display = 'none';
+      companyRowCount--;
+      updateCompanyRowButtons();
+      if (typeof autoSaveCurrentForm === 'function') {
+        autoSaveCurrentForm();
+      }
+    }
+  }
+
+  (function () {
+    var rows = document.querySelectorAll('.company-row');
+    for (var i = 0; i < rows.length; i++) {
+      rows[i].style.display = (i < companyRowCount) ? '' : 'none';
+    }
+    updateCompanyRowButtons();
+
+    document.querySelectorAll('.company-row input, .company-row select').forEach(function (el) {
+      el.addEventListener('input', updateCompanyRowButtons);
+      el.addEventListener('change', updateCompanyRowButtons);
+    });
+  })();
+
+  function onYearChange(targetYear) {
+    var url = new URL(window.location.href);
+    url.searchParams.set('year', targetYear);
+    var dest = url.toString();
+    if (typeof _hasUnsavedChanges !== 'undefined' && _hasUnsavedChanges && typeof autoSaveCurrentForm === 'function') {
+      autoSaveCurrentForm(function () {
+        window.location.href = dest;
+      });
+    } else {
+      window.location.href = dest;
+    }
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,217 @@
+{% extends "layout.html" %}
+{% block title %}— Admin{% endblock %}
+{% block content %}
+
+<style>
+  .admin-fixed-upper {
+    background: #fff;
+    padding-bottom: 0.5rem;
+  }
+  .admin-table-wrap {
+    width: 100%;
+    max-height: calc(100vh - 300px);
+    min-height: 280px;
+    overflow-y: auto;
+    overflow-x: auto;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  }
+  .admin-table-wrap::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  .admin-table-wrap::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+  }
+  .admin-table-wrap::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+  }
+  .admin-table-wrap::-webkit-scrollbar-track {
+    background: #f8fafc;
+  }
+  .admin-table-wrap table {
+    border-collapse: separate;
+    border-spacing: 0;
+    width: 100%;
+    font-size: 0.85rem;
+  }
+  .admin-table-wrap thead th {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: #f1f5f9;
+    border-bottom: 2px solid #1a3a5c;
+    color: #1a3a5c;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  }
+</style>
+
+<div class="admin-fixed-upper">
+  {# Section 1: Database backup downloads #}
+  <div class="page-intro" style="margin-bottom:0.5rem; margin-top:1.0rem;">
+    <p>As an administrator of UNI-COMPASS, you can edit data for any country, sector and organisation, and you can
+      download exports of all data.</p>
+  </div>
+  <div class="page-intro" style="margin-bottom:0.5rem; margin-top:0.8rem;">
+    <p><strong>Backup downloads of the entire database</strong></p>
+  </div>
+
+  {# Admin database download action buttons (.db, .csv, .xlsx, .zip) #}
+  <div style="margin-bottom:1.0rem; display:flex; align-items:center; gap:0.4rem; flex-wrap:wrap;">
+    <a href="{{ url_for('admin_download_db') }}" id="download-db-btn" class="btn-download-sm"
+      title="Download timestamped copy of unicompass.db (SQLite database)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+        <polyline points="7 10 12 15 17 10"></polyline>
+        <line x1="12" y1="15" x2="12" y2="3"></line>
+      </svg>
+      Download .db
+    </a>
+    <a href="{{ url_for('admin_download_csv') }}" id="download-csv-btn" class="btn-download-sm"
+      title="Download timestamped database tables as CSV (ZIP archive)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+        <polyline points="7 10 12 15 17 10"></polyline>
+        <line x1="12" y1="15" x2="12" y2="3"></line>
+      </svg>
+      Download .csv
+    </a>
+    <a href="{{ url_for('admin_download_xlsx') }}" id="download-xlsx-btn" class="btn-download-sm"
+      title="Download timestamped database tables as Excel (.xlsx workbook)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+        <polyline points="7 10 12 15 17 10"></polyline>
+        <line x1="12" y1="15" x2="12" y2="3"></line>
+      </svg>
+      Download .xlsx
+    </a>
+    <a href="{{ url_for('admin_download_zip') }}" id="download-all-zip-btn" class="btn-download-sm"
+      title="Download all tables and reports for all organisations and sectors as a ZIP archive">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+        <polyline points="7 10 12 15 17 10"></polyline>
+        <line x1="12" y1="15" x2="12" y2="3"></line>
+      </svg>
+      Download all tables (.zip)
+    </a>
+  </div>
+
+  {# Section 2: Completion progress overview matrix #}
+  <div class="page-intro" style="margin-bottom:0.5rem; margin-top:1.2rem;">
+    <p><strong>Completion progress by affiliate and sector</strong></p>
+  </div>
+
+  {# Year selector filter #}
+  <div class="filter-bar" style="margin-bottom:0.8rem;">
+    <label for="year">Year:</label>
+    <select id="year" onchange="window.location.href='?year='+this.value">
+      <option value="all" {% if selected_year is none %}selected{% endif %}>All years</option>
+      {% for y in years %}
+      <option value="{{ y }}" {% if selected_year==y %}selected{% endif %}>{{ y }}</option>
+      {% endfor %}
+    </select>
+  </div>
+</div>
+
+{# Progress matrix table across all affiliate and sector combinations #}
+{% if not combos %}
+<p style="color:#888;">No organisation-sector combinations found in <code>users.csv</code>.</p>
+{% else %}
+<div class="admin-table-wrap">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th class="left">Organisation</th>
+        <th class="left">Sector</th>
+        <th class="left">Country</th>
+        <th class="left">User(s)</th>
+        <th class="center">Annual Results</th>
+        <th class="center">Agreements</th>
+        <th class="center">Companies</th>
+        <th class="center">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in combos %}
+      {% set p = c.progress %}
+      <tr>
+        {# Organisation name and admin indicator #}
+        <td class="left" style="font-weight:600; color:#1a3a5c;">
+          {{ c.organisation }}
+          {% if c.is_admin %}
+          <span
+            style="font-size:0.7rem; background:#1a3a5c; color:#fff; padding:1px 5px; border-radius:3px; margin-left:4px;">Admin</span>
+          {% endif %}
+        </td>
+
+        {# Sector badge #}
+        <td class="left">
+          <span
+            style="background:#eef2f6; color:#1a3a5c; padding:2px 6px; border-radius:3px; font-size:0.8rem; font-weight:500;">
+            {{ c.sector }}
+          </span>
+        </td>
+
+        {# Country & Assigned users #}
+        <td class="left" style="color:#555;">{{ c.country or '—' }}</td>
+        <td class="left" style="color:#555; font-size:0.8rem;">
+          {{ c.users|join(', ') if c.users else '—' }}
+        </td>
+
+        {# Annual results progress indicator #}
+        <td class="center">
+          {% set a = p.get('annual', {}) %}
+          <div style="font-weight:500; font-size:0.78rem;">{{ a.get('filled', 0) }}/{{ a.get('total', 0) }}</div>
+          <div style="height:6px; background:#eee; border-radius:3px; margin:3px auto 0; width:80px;">
+            <div
+              style="height:6px; background:#1a3a5c; border-radius:3px; width:{% if a.get('total', 0) > 0 %}{{ (a.get('filled', 0) / a.get('total', 0)) * 100 }}{% else %}0{% endif %}%;">
+            </div>
+          </div>
+        </td>
+
+        {# Agreements progress indicator #}
+        <td class="center">
+          {% set a = p.get('agreements', {}) %}
+          <div style="font-weight:500; font-size:0.78rem;">{{ a.get('filled', 0) }} entries</div>
+          <div style="height:6px; background:#eee; border-radius:3px; margin:3px auto 0; width:80px;">
+            <div
+              style="height:6px; background:#1a3a5c; border-radius:3px; width:{% if a.get('filled', 0) > 0 %}{{ [a.get('filled', 0) * 10, 100]|min }}{% else %}0{% endif %}%;">
+            </div>
+          </div>
+        </td>
+
+        {# Companies progress indicator #}
+        <td class="center">
+          {% set a = p.get('companies', {}) %}
+          <div style="font-weight:500; font-size:0.78rem;">{{ a.get('filled', 0) }} entries</div>
+          <div style="height:6px; background:#eee; border-radius:3px; margin:3px auto 0; width:80px;">
+            <div
+              style="height:6px; background:#1a3a5c; border-radius:3px; width:{% if a.get('filled', 0) > 0 %}{{ [a.get('filled', 0) * 10, 100]|min }}{% else %}0{% endif %}%;">
+            </div>
+          </div>
+        </td>
+
+        {# Direct links to view/edit affiliate data #}
+        <td class="center" style="white-space:nowrap;">
+          <a href="{{ url_for('annual_results', org=c.organisation, sector=c.sector) }}"
+            style="color:#1a3a5c; margin:0 0.2rem; font-weight:500; text-decoration:underline;">Annual</a>
+          <a href="{{ url_for('agreements', org=c.organisation, sector=c.sector) }}"
+            style="color:#1a3a5c; margin:0 0.2rem; font-weight:500; text-decoration:underline;">Agreements</a>
+          <a href="{{ url_for('companies', org=c.organisation, sector=c.sector) }}"
+            style="color:#1a3a5c; margin:0 0.2rem; font-weight:500; text-decoration:underline;">Companies</a>
+          <a href="{{ url_for('export', org=c.organisation, sector=c.sector) }}"
+            style="color:#28a745; margin:0 0.2rem; font-weight:600; text-decoration:underline;">Export</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}

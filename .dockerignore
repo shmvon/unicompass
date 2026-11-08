@@ -1,0 +1,89 @@
+# ==============================================================================
+# UNI Compass — Docker Ignore
+# Excludes local databases, generated exports, OS clutter, caches, and test files
+# from being copied into the container image during 'COPY . .'.
+# ==============================================================================
+
+# Python bytecode & cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+env/
+venv/
+ENV/
+
+# Testing & test outputs
+tests.py
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+
+# SQLite databases & export artifacts
+# NOTE: data/users.csv and data/countries.csv are KEPT to seed new volume mounts
+data/*.db
+data/.secret_key
+data/*.sqlite*
+data/*.db-wal
+data/*.db-shm
+data/*.db-journal
+data/exports/
+*.db
+*.sqlite*
+
+# Environment & secrets
+.env
+.env.*
+*.pem
+*.key
+
+# Git & VCS
+.git/
+.gitignore
+.gitattributes
+.github/
+
+# Docker build configs (redundant inside runtime image)
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+.docker/
+
+# Development guides & documentation
+development-gitignore/
+*.md
+
+# Editor & IDE configs
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+*.sublime-project
+*.sublime-workspace
+
+# OS-specific files (macOS AppleDouble metadata, Windows thumbs)
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+desktop.ini
+
+# Archives & exported container images
+*.tar
+*.tar.gz
+*.tgz
+*.zip
+*.bak
+
+
+# stray local binary
+kmk

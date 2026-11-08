@@ -1,0 +1,357 @@
+{% extends "layout.html" %}
+{% block title %}— Ad hoc survey 2026{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/survey.css') }}">
+{% endblock %}
+
+{% block content %}
+{# Admin viewing indicator banner #}
+{% if is_admin and view_org == 'None' %}
+<p class="viewing-banner">Viewing as: <strong>Unaffiliated (Admin)</strong></p>
+{% elif view_org and view_org != session_org and view_org != 'None' %}
+<p class="viewing-banner">Viewing: <strong>{{ view_org }}</strong>{% if target_user and target_user != current_user %} (Posting as: <strong>{{ target_user }}</strong>){% else %} (Posting as: <strong>{{ current_user }}</strong>){% endif %}</p>
+{% endif %}
+
+{# Page introduction above the table #}
+<div class="page-intro">
+  <h1 style="font-size:1.25rem; color:#1a3a5c; margin-bottom:0.4rem;">{{ survey.title }}{% if survey.subtitle %}: {{
+    survey.subtitle }} {% endif %}</h1>
+  <p>{{ survey.intro }}</p>
+</div>
+
+{# Survey form and live results table #}
+<form id="survey-form" class="data-entry-form" method="POST" action="{{ url_for('survey', id=survey.id) }}">
+  <div class="survey-table-card table-wrap">
+    <table class="data-table survey-table">
+      <thead>
+        <tr>
+          <th style="width: 50%;">Question</th>
+          <th style="width: 50%;">Results</th>
+        </tr>
+      </thead>
+      <tbody>
+        {# Question 1: Accessibility #}
+        <tr>
+          <td class="q-content-cell">
+            <div>Rate the accessibility of UNI-COMPASS in terms of <strong>ease-of-use and clarity</strong>.</div>
+            <div class="star-rating-row">
+              <div class="star-rating-control" data-q="q1">
+                {% for star in range(5, 0, -1) %}
+                <input type="radio" id="q1_star_{{ star }}" name="q1_rating" value="{{ star }}" {% if
+                  saved.get('q1_rating')==star %}checked{% endif %}>
+                <label for="q1_star_{{ star }}" title="{{ star }} stars">★</label>
+                {% endfor %}
+              </div>
+            </div>
+          </td>
+          <td class="q-result-cell">
+            <div class="live-rating-summary">
+              <span class="live-score"><span class="star-gold">★</span> <strong id="live-avg-q1">{{ summary.avg_q1
+                  }}</strong> / 5</span>
+              <span class="live-count">(<span id="live-count-q1">{{ summary.count_q1 }}</span> ratings)</span>
+            </div>
+          </td>
+        </tr>
+
+        {# Question 2: Sector Bargaining Monitoring #}
+        <tr>
+          <td class="q-content-cell">
+            <div>Rate the usefulness of UNI-COMPASS for monitoring your sector's <strong>bargaining results</strong>
+              over time.</div>
+            <div class="star-rating-row">
+              <div class="star-rating-control" data-q="q2">
+                {% for star in range(5, 0, -1) %}
+                <input type="radio" id="q2_star_{{ star }}" name="q2_rating" value="{{ star }}" {% if
+                  saved.get('q2_rating')==star %}checked{% endif %}>
+                <label for="q2_star_{{ star }}" title="{{ star }} stars">★</label>
+                {% endfor %}
+              </div>
+            </div>
+          </td>
+          <td class="q-result-cell">
+            <div class="live-rating-summary">
+              <span class="live-score"><span class="star-gold">★</span> <strong id="live-avg-q2">{{ summary.avg_q2
+                  }}</strong> / 5</span>
+              <span class="live-count">(<span id="live-count-q2">{{ summary.count_q2 }}</span> ratings)</span>
+            </div>
+          </td>
+        </tr>
+
+        {# Question 3: European Annual Report #}
+        <tr>
+          <td class="q-content-cell">
+            <div>Rate the <strong>value of annual reports</strong> with bargaining results across Europe for
+              your organisation?</div>
+            <div class="star-rating-row">
+              <div class="star-rating-control" data-q="q3">
+                {% for star in range(5, 0, -1) %}
+                <input type="radio" id="q3_star_{{ star }}" name="q3_rating" value="{{ star }}" {% if
+                  saved.get('q3_rating')==star %}checked{% endif %}>
+                <label for="q3_star_{{ star }}" title="{{ star }} stars">★</label>
+                {% endfor %}
+              </div>
+            </div>
+          </td>
+          <td class="q-result-cell">
+            <div class="live-rating-summary">
+              <span class="live-score"><span class="star-gold">★</span> <strong id="live-avg-q3">{{ summary.avg_q3
+                  }}</strong> / 5</span>
+              <span class="live-count">(<span id="live-count-q3">{{ summary.count_q3 }}</span> ratings)</span>
+            </div>
+          </td>
+        </tr>
+
+        {# Question 4: Suggestions & Qualitative Comments #}
+        <tr>
+          <td class="q-content-cell" style="vertical-align: top;">
+            <div>Would you like to share other <strong>ideas, comments or suggestions</strong>?</div>
+            <textarea id="q4_text" name="q4_text" class="survey-textarea" rows="4"
+              placeholder="Share any ideas, observations, suggestions or feedback for the ongoing development of UNI-COMPASS...">{{ saved.get('q4_text', '') }}</textarea>
+
+            {# Privacy settings checkboxes #}
+            <div class="privacy-checkboxes">
+              <label class="privacy-label">
+                <input type="checkbox" name="show_org" value="1" id="show_org" {% if saved.get('show_org', 1)
+                  %}checked{% endif %}>
+                Show organisation
+              </label>
+              <label class="privacy-label">
+                <input type="checkbox" name="show_sector" value="1" id="show_sector" {% if saved.get('show_sector', 1)
+                  %}checked{% endif %}>
+                Show sector
+              </label>
+              <label class="privacy-label">
+                <input type="checkbox" name="show_country" value="1" id="show_country" {% if saved.get('show_country',
+                  1) %}checked{% endif %}>
+                Show country
+              </label>
+              <label class="privacy-label">
+                <input type="checkbox" name="show_user" value="1" id="show_user" {% if saved.get('show_user',
+                  1) %}checked{% endif %}>
+                Show user
+              </label>
+            </div>
+          </td>
+
+          {# Right Column: Comments feed & response count #}
+          <td class="q-result-cell" style="vertical-align: top;">
+            <div class="comments-feed-header">
+              <span>Affiliate comments (<span id="live-total-comments">{{ summary.comments_count }}</span>)</span>
+              <span class="total-affiliates">Total survey responses: <strong id="live-total-responses">{{
+                  summary.total_responses }}</strong></span>
+            </div>
+
+            <div class="feedback-feed-container" id="feedback-feed" tabindex="0" aria-label="Affiliate comments feed">
+              {% if not summary.comments %}
+              <div id="no-comments-placeholder" class="no-comments-placeholder">
+                No comments submitted yet.
+              </div>
+              {% else %}
+              {% for cmt in summary.comments %}
+              <div class="feedback-item">
+                <div class="feedback-text">{{ cmt.text }}</div>
+                <div class="feedback-meta">
+                  {% if cmt.is_anonymous %}
+                  <span class="meta-tag anon">Anonymous affiliate</span>
+                  {% else %}
+                  {% if cmt.organisation %}
+                  <span class="meta-tag org" title="Organisation">{{ cmt.organisation }}</span>
+                  {% endif %}
+                  {% if cmt.sector %}
+                  <span class="meta-tag sec" title="Sector">{{ cmt.sector }}</span>
+                  {% endif %}
+                  {% if cmt.country %}
+                  <span class="meta-tag cnt" title="Country">{{ cmt.country }}</span>
+                  {% endif %}
+                  {% if cmt.user %}
+                  <span class="meta-tag usr" title="User">{{ cmt.user }}</span>
+                  {% endif %}
+                  {% endif %}
+                  {% if cmt.updated_at %}
+                  <span class="feedback-time">{{ cmt.updated_at[:10] }}</span>
+                  {% endif %}
+                </div>
+              </div>
+              {% endfor %}
+              {% endif %}
+            </div>
+            <div class="scroll-hint">
+              <span>Auto-scrolls • Hover or scroll to inspect</span>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  {# Action Buttons below table #}
+  {% if enable_save_button %}
+  <div class="survey-actions">
+    <button type="submit" id="save-survey-btn" class="btn-action-primary">
+      Save
+    </button>
+  </div>
+  {% endif %}
+</form>
+
+<script>
+  (function () {
+    var form = document.getElementById('survey-form');
+    var feed = document.getElementById('feedback-feed');
+
+    // -----------------------------------------------------------------------
+    // Star Rating Click & Status Label Update
+    // -----------------------------------------------------------------------
+    var starControls = document.querySelectorAll('.star-rating-control');
+    starControls.forEach(function (ctrl) {
+      var qKey = ctrl.getAttribute('data-q');
+      var statusEl = document.getElementById(qKey + '_status');
+      var inputs = ctrl.querySelectorAll('input[type="radio"]');
+
+      inputs.forEach(function (inp) {
+        inp.addEventListener('change', function () {
+          if (statusEl) {
+            statusEl.textContent = inp.value + ' of 5 stars';
+          }
+          // Instant submit via autosave
+          if (typeof autoSaveCurrentForm === 'function') {
+            autoSaveCurrentForm();
+          }
+        });
+      });
+    });
+
+    // Update status labels on load if already checked
+    ['q1', 'q2', 'q3'].forEach(function (qKey) {
+      var checked = document.querySelector('input[name="' + qKey + '_rating"]:checked');
+      var statusEl = document.getElementById(qKey + '_status');
+      if (checked && statusEl) {
+        statusEl.textContent = checked.value + ' of 5 stars';
+      }
+    });
+
+    // -----------------------------------------------------------------------
+    // Instant Live Update via AJAX Save
+    // -----------------------------------------------------------------------
+    function updateFeedbackDOM(summary) {
+      if (!summary) return;
+
+      // Stats
+      var totalEl = document.getElementById('live-total-responses');
+      if (totalEl) totalEl.textContent = summary.total_responses;
+
+      var totalCmtsEl = document.getElementById('live-total-comments');
+      if (totalCmtsEl) totalCmtsEl.textContent = summary.comments_count;
+
+      // Question 1
+      var avgQ1 = document.getElementById('live-avg-q1');
+      if (avgQ1) avgQ1.textContent = summary.avg_q1;
+      var countQ1 = document.getElementById('live-count-q1');
+      if (countQ1) countQ1.textContent = summary.count_q1;
+
+      // Question 2
+      var avgQ2 = document.getElementById('live-avg-q2');
+      if (avgQ2) avgQ2.textContent = summary.avg_q2;
+      var countQ2 = document.getElementById('live-count-q2');
+      if (countQ2) countQ2.textContent = summary.count_q2;
+
+      // Question 3
+      var avgQ3 = document.getElementById('live-avg-q3');
+      if (avgQ3) avgQ3.textContent = summary.avg_q3;
+      var countQ3 = document.getElementById('live-count-q3');
+      if (countQ3) countQ3.textContent = summary.count_q3;
+
+      // Comments Feed
+      if (feed && summary.comments) {
+        if (summary.comments.length === 0) {
+          feed.innerHTML = '<div id="no-comments-placeholder" class="no-comments-placeholder">No comments submitted yet.</div>';
+        } else {
+          var html = '';
+          summary.comments.forEach(function (c) {
+            html += '<div class="feedback-item">';
+            html += '<div class="feedback-text">' + escapeHtml(c.text) + '</div>';
+            html += '<div class="feedback-meta">';
+            if (c.is_anonymous) {
+              html += '<span class="meta-tag anon">Anonymous affiliate</span>';
+            } else {
+              if (c.organisation) {
+                html += '<span class="meta-tag org" title="Organisation">' + escapeHtml(c.organisation) + '</span>';
+              }
+              if (c.sector) {
+                html += '<span class="meta-tag sec" title="Sector">' + escapeHtml(c.sector) + '</span>';
+              }
+              if (c.country) {
+                html += '<span class="meta-tag cnt" title="Country">' + escapeHtml(c.country) + '</span>';
+              }
+              if (c.user) {
+                html += '<span class="meta-tag usr" title="User">' + escapeHtml(c.user) + '</span>';
+              }
+            }
+            if (c.updated_at) {
+              html += '<span class="feedback-time">' + escapeHtml(c.updated_at.substring(0, 10)) + '</span>';
+            }
+            html += '</div></div>';
+          });
+          feed.innerHTML = html;
+        }
+      }
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    // Hook autoSave response for instant feedback update
+    window.onAutoSaveSuccess = function (data) {
+      if (data && data.summary) {
+        updateFeedbackDOM(data.summary);
+      }
+    };
+
+    // -----------------------------------------------------------------------
+    // Smooth Auto-Scrolling Feed with Manual Scrollbar Override
+    // -----------------------------------------------------------------------
+    var isUserInteracting = false;
+    var scrollSpeed = 0.5; // pixels per step
+
+    function stepScroll() {
+      if (!feed || isUserInteracting) return;
+      if (feed.scrollHeight <= feed.clientHeight) return;
+
+      feed.scrollTop += scrollSpeed;
+      if (feed.scrollTop + feed.clientHeight >= feed.scrollHeight - 2) {
+        isUserInteracting = true;
+        setTimeout(function () {
+          feed.scrollTop = 0;
+          isUserInteracting = false;
+        }, 1500);
+      }
+    }
+
+    if (feed) {
+      feed.addEventListener('mouseenter', function () { isUserInteracting = true; });
+      feed.addEventListener('mouseleave', function () { isUserInteracting = false; });
+      feed.addEventListener('touchstart', function () { isUserInteracting = true; }, { passive: true });
+      feed.addEventListener('touchend', function () {
+        setTimeout(function () { isUserInteracting = false; }, 2000);
+      });
+      feed.addEventListener('wheel', function () {
+        isUserInteracting = true;
+        clearTimeout(feed._wheelTimeout);
+        feed._wheelTimeout = setTimeout(function () {
+          isUserInteracting = false;
+        }, 3000);
+      }, { passive: true });
+
+      setInterval(stepScroll, 40);
+    }
+  })();
+</script>
+{% endblock %}

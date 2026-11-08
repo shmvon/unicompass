@@ -1,0 +1,3 @@
+user,pincode,organisation,is_admin,country,sector
+Example-Admin,0000,Example Organisation,1,Europe,UNI
+Example-User,1111,Example Organisation,0,Belgium,Commerce

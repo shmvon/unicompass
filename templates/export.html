@@ -1,0 +1,57 @@
+{% extends "layout.html" %}
+{% block title %}— Export{% endblock %}
+{% block content %}
+{# Admin viewing indicator banner #}
+{% if is_admin and view_org == 'None' %}
+<p class="viewing-banner">Viewing as: <strong>Unaffiliated (Admin)</strong></p>
+{% elif view_org and view_org != session_org and view_org != 'None' %}
+<p class="viewing-banner">Viewing: <strong>{{ view_org }}</strong></p>
+{% endif %}
+
+{# Page introduction #}
+<div class="page-intro">
+  <p>Download data as CSV (per table) or XLSX (combined workbook). Files are automatically generated and
+    kept up to date. You can also generate and download a comprehensive PDF report below.</p>
+</div>
+
+{# Export files table listing available CSV and XLSX files #}
+{% if not files %}
+<p style="color:#888;">No export files available for the current selection.</p>
+{% else %}
+<div class="table-wrap" style="margin-bottom:1.2rem; width:60%; max-width:60%;">
+  <table class="data-table" style="width:100%;">
+    <thead>
+      <tr>
+        <th class="left">File</th>
+        <th class="num" style="width:90px;">Size</th>
+        <th class="center" style="width:100px;"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for f in files %}
+      <tr>
+        <td class="left" style="font-weight:500;">{{ f.name }}</td>
+        <td class="num">{{ f.size }}</td>
+        <td class="center">
+          <a href="{{ url_for('export_download', filename=f.name) }}"
+            style="color:#1a3a5c; font-weight:600; text-decoration:underline;">Download</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{# Main action buttons: download all tables as ZIP or generate PDF report #}
+<div class="actions-bar">
+  <a href="{{ url_for('export_download_all', org=view_org) if is_admin and view_org and view_org != 'None' else url_for('export_download_all') }}" id="download-zip-btn"
+    class="btn-action-primary">
+    Download all tables
+  </a>
+  <a href="{{ url_for('export_pdf', org=view_org) if is_admin and view_org and view_org != 'None' else url_for('export_pdf') }}" id="generate-pdf-btn"
+    class="btn-action-success">
+    Generate PDF Report
+  </a>
+</div>
+{% endblock %}

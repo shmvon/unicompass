@@ -1,0 +1,134 @@
+{% extends "layout.html" %}
+{% block title %}— Home{% endblock %}
+{% block content %}
+{# Admin viewing indicator banner #}
+{% if is_admin and view_org == 'None' %}
+<p class="viewing-banner">Viewing as: <strong>Unaffiliated (Admin)</strong></p>
+{% elif view_org and view_org != session_org and view_org != 'None' %}
+<p class="viewing-banner">Viewing: <strong>{{ view_org }}</strong></p>
+{% endif %}
+
+{# Page introduction & instructions #}
+<div class="page-intro">
+  <p>
+    Welcome to <strong>UNI-COMPASS</strong>, an instrument to track collective bargaining in your sector. <strong>UNI
+      Europa</strong> will aggregate inputs annually to describe evolutions across Europe for its affiliated unions, in
+    order to have a structured base for discussion.
+  </p>
+  <p>
+    Complete the tables for each of the three main sections: <a
+      href="{{ url_for('annual_results', org=view_org) if is_admin and view_org and view_org != 'None' else url_for('annual_results') }}"
+      style="color:#1a3a5c; font-weight:600; text-decoration:underline;">annual results</a>, <a
+      href="{{ url_for('agreements', org=view_org) if is_admin and view_org and view_org != 'None' else url_for('agreements') }}"
+      style="color:#1a3a5c; font-weight:600; text-decoration:underline;">major agreements</a> and <a
+      href="{{ url_for('companies', org=view_org) if is_admin and view_org and view_org != 'None' else url_for('companies') }}"
+      style="color:#1a3a5c; font-weight:600; text-decoration:underline;">major companies</a>. Your input will be
+    automatically saved. Clicking the 'save' button will also refresh the page for dynamic
+    content.
+  </p>
+  <p>
+    All fields have <strong>comment boxes</strong>, allowing you to provide additional information. For instance, you
+    can mention
+    methodological limitations (e.g. how are growth rates calculated), or indicate the scope of the data (e.g. does a
+    pay increase apply to all workers or not), should this be relevant.
+  </p>
+  <p>For <strong>assistance</strong> with the completion of your data or the use of this platform, you can reach out to
+    the support
+    staff at HIVA
+    by booking a 20 minute meeting <a
+      href="https://outlook.office.com/bookwithme/user/bee024f6b7344753b0c3a8bdfba35d5a@kuleuven.be/meetingtype/bd_TlSEOkkid3VSJZDSC-g2?bookingcode=bef8105f-b85c-4cf1-b9d3-27675a0e88aa&amp;anonymous&amp;ismsaljsauthenabled&amp;ep=mcard"
+      target="_blank" rel="noopener noreferrer" style="color:#1a3a5c; font-weight:600; text-decoration:underline;"
+      title="Book time with Sem Vandekerckhove: UNI-COMPASS Support Call (20') • This link will expire on: December 07, 2026">here</a>.
+  </p>
+  {% if enable_survey %}
+  <p>To provide general feedback to help with the development, you can fill in the optional <a
+      href="{{ url_for('survey') }}" style="color:#1a3a5c; font-weight:600; text-decoration:underline;">ad hoc
+      survey</a>.</p>
+  {% endif %}
+</div>
+
+{# Input progress card per year across sections #}
+{% if progress_years %}
+<div style="background:#fff; border:1px solid #ddd; border-radius:6px; padding:0.8rem; overflow-x:auto;">
+  <div style="font-weight:600; margin-bottom:0.6rem; font-size:0.95rem; color:#1a3a5c;">Input progress</div>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Year</th>
+        <th class="center">
+          <a href="{{ url_for('annual_results', org=view_org) if is_admin and view_org and view_org != 'None' else url_for('annual_results') }}"
+            style="color:#1a3a5c; text-decoration:underline; font-weight:600;">Annual results</a>
+        </th>
+        <th class="center">
+          <a href="{{ url_for('agreements', org=view_org) if is_admin and view_org and view_org != 'None' else url_for('agreements') }}"
+            style="color:#1a3a5c; text-decoration:underline; font-weight:600;">Major agreements</a>
+        </th>
+        <th class="center">
+          <a href="{{ url_for('companies', org=view_org) if is_admin and view_org and view_org != 'None' else url_for('companies') }}"
+            style="color:#1a3a5c; text-decoration:underline; font-weight:600;">Major companies</a>
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for y in progress_years|sort(reverse=true) %}
+      {% set p = progress_years[y] %}
+      <tr>
+        {# Year label #}
+        <td style="font-weight:600; color:#1a3a5c;">{{ y }}</td>
+
+        {# Annual results 10-step progress indicator #}
+        <td class="center">
+          {% set s_ann = [p.annual_filled, 10]|min %}
+          {% set c_ann = '#dc2626' if s_ann <= 3 else ('#f59e0b' if s_ann <=6 else '#16a34a' ) %} <div
+            style="display:flex; gap:3px; width:110px; margin:0 auto; justify-content:center;"
+            title="{{ p.annual_filled }} completed">
+            {% for i in range(1, 11) %}
+            <div
+              style="flex:1; height:8px; border-radius:2px; background:{% if i <= s_ann %}{{ c_ann }}{% else %}#e5e7eb{% endif %};">
+            </div>
+            {% endfor %}
+</div>
+</td>
+
+{# Major agreements 10-step progress indicator #}
+<td class="center">
+  {% set s_ag = [p.ag_filled, 10]|min %}
+  {% set c_ag = '#dc2626' if s_ag <= 3 else ('#f59e0b' if s_ag <=6 else '#16a34a' ) %} <div
+    style="display:flex; gap:3px; width:110px; margin:0 auto; justify-content:center;"
+    title="{{ p.ag_filled }} completed">
+    {% for i in range(1, 11) %}
+    <div
+      style="flex:1; height:8px; border-radius:2px; background:{% if i <= s_ag %}{{ c_ag }}{% else %}#e5e7eb{% endif %};">
+    </div>
+    {% endfor %}
+    </div>
+</td>
+
+{# Major companies 10-step progress indicator #}
+<td class="center">
+  {% set s_co = [p.co_filled, 10]|min %}
+  {% set c_co = '#dc2626' if s_co <= 3 else ('#f59e0b' if s_co <=6 else '#16a34a' ) %} <div
+    style="display:flex; gap:3px; width:110px; margin:0 auto; justify-content:center;"
+    title="{{ p.co_filled }} completed">
+    {% for i in range(1, 11) %}
+    <div
+      style="flex:1; height:8px; border-radius:2px; background:{% if i <= s_co %}{{ c_co }}{% else %}#e5e7eb{% endif %};">
+    </div>
+    {% endfor %}
+    </div>
+</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+{# Organisation logos #}
+<div
+  style="display:flex; align-items:left; justify-content:left; gap:1.5rem; margin-top:3.0rem; margin-bottom:1.2rem; flex-wrap:wrap;">
+  <img src="{{ url_for('serve_logo', filename='Uni-Global-Europa-Logo-LANDSCAPE-CMYK-297x300.jpg') }}" alt="UNI Europa"
+    style="height:72px; width:auto; max-width:160px; object-fit:contain;">
+  <img src="{{ url_for('serve_logo', filename='HIVA_RGB_LOGO_ENG.png') }}" alt="HIVA - KU Leuven"
+    style="height:70px; width:auto; max-width:160px; object-fit:contain;">
+</div>
+{% endif %}
+{% endblock %}

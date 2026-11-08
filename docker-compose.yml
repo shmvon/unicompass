@@ -1,0 +1,18 @@
+version: "3.8"
+
+services:
+  unicompass:
+    platform: linux/amd64
+    build: .
+    container_name: unicompass_app
+    restart: unless-stopped
+    ports:
+      # Clear path between host/server port 8000 and internal WSGI port 8767
+      - "8000:8767"
+    environment:
+      - SECRET_KEY=replace-with-a-secure-random-key-in-production
+      - DATA_DIR=/app/data
+      - CAAS_DEPLOYED=1
+    volumes:
+      # Single persistent volume containing all SQLite DB, users.csv, and exported CSV/XLSX files
+      - ./data:/app/data

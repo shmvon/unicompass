@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UNI Compass {% block title %}{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
+  {% block extra_head %}{% endblock %}
+</head>
+
+<body>
+  <!-- Top Bar 1: Identification, Context & Auth -->
+  <div class="topbar-identity" id="topbarIdentity">
+    <div class="topbar-identity-inner">
+      <div class="topbar-left">
+        <a href="{{ url_for('home') }}" class="topbar-brand">UNI-COMPASS</a>
+        {% if current_user %}
+        <span id="autosave-indicator"
+          style="display:inline-flex; align-items:center; gap:4px; font-size:0.75rem; color:#4ade80; opacity:0; transition:opacity 0.25s ease; font-weight:500; margin-left:0.6rem; vertical-align:middle; white-space:nowrap;">
+          <span style="font-size:0.65rem; color:#4ade80; line-height:1;">●</span> <span id="autosave-text">Automatically
+            saved</span>
+        </span>
+        {% endif %}
+      </div>
+
+      <!-- Mobile Context Toggle Button -->
+      <button type="button" class="mobile-topbar-toggle" id="mobileContextToggle" onclick="toggleMobileContext(event)"
+        aria-label="Toggle user and context settings" aria-expanded="false">
+        <span class="mobile-context-chip">{{ view_org or current_sector or 'Context' }}</span>
+        <span class="mobile-toggle-caret">▾</span>
+      </button>
+
+      <div class="topbar-right" id="topbarRight">
+        <div class="identity-controls">
+          {% if current_user %}
+          <!-- 1. Sector Button / Dropdown -->
+          {% if has_multiple_sectors %}
+          <div class="topbar-dropdown" id="sectorDropdown">
+            <button type="button" class="topbar-btn" onclick="toggleTopbarDropdown('sectorMenu', event)"
+              title="Change Sector">
+              <span class="topbar-label"></span>
+              <span class="topbar-val">{{ current_sector }}</span>
+              <span class="caret">▾</span>
+            </button>
+            <div class="topbar-menu" id="sectorMenu">
+              <div class="topbar-menu-header">Select Sector</div>
+              {% for s in available_sectors %}
+              <a href="{{ url_for('set_context', sector=s, next=request.path) }}"
+                class="{% if s == current_sector %}active{% endif %}">{{ s }}</a>
+              {% endfor %}
+            </div>
+          </div>
+          {% else %}
+          <div class="topbar-pill">
+            <span class="topbar-label"></span>
+            <span class="topbar-val">{{ current_sector }}</span>
+          </div>
+          {% endif %}
+
+          <!-- 2. Country Button / Dropdown -->
+          {% if has_multiple_countries %}
+          <div class="topbar-dropdown" id="countryDropdown">
+            <button type="button" class="topbar-btn" onclick="toggleTopbarDropdown('countryMenu', event)"
+              title="Change Country">
+              <span class="topbar-label"></span>
+              <span class="topbar-val">{{ current_country }}</span>
+              <span class="caret">▾</span>
+            </button>
+            <div class="topbar-menu with-scroll" id="countryMenu">
+              <div class="topbar-menu-header">Select Country</div>
+              {% for c in available_countries %}
+              <a href="{{ url_for('set_context', country=c, next=request.path) }}"
+                class="{% if c == current_country %}active{% endif %}">{{ c }}</a>
+              {% endfor %}
+            </div>
+          </div>
+          {% else %}
+          <div class="topbar-pill">
+            <span class="topbar-label"></span>
+            <span class="topbar-val">{{ current_country or '—' }}</span>
+          </div>
+          {% endif %}
+
+          <!-- 3. Organisation Button / Dropdown -->
+          {% if has_multiple_orgs %}
+          <div class="topbar-dropdown" id="orgDropdown">
+            <button type="button" class="topbar-btn" onclick="toggleTopbarDropdown('orgMenu', event)"
+              title="Change Organisation">
+              <span class="topbar-label"></span>
+              <span class="topbar-val">{{ view_org }}</span>
+              <span class="caret">▾</span>
+            </button>
+            <div class="topbar-menu with-scroll" id="orgMenu">
+              <div class="topbar-menu-header">Select Organisation</div>
+              {% for o in available_orgs %}
+              <a href="{{ url_for('set_context', org=o, next=request.path) }}"
+                class="{% if o == view_org %}active{% endif %}">{{ o }}</a>
+              {% endfor %}
+            </div>
+          </div>
+          {% else %}
+          <div class="topbar-pill">
+            <span class="topbar-label"></span>
+            <span class="topbar-val">{{ view_org or session_org }}</span>
+          </div>
+          {% endif %}
+
+          <!-- 4. User Button / Dropdown -->
+          {% if has_multiple_users %}
+          <div class="topbar-dropdown" id="userDropdown">
+            <button type="button" class="topbar-btn" onclick="toggleTopbarDropdown('userMenu', event)"
+              title="Post/Act as User">
+              <span class="topbar-label"></span>
+              <span class="topbar-val">{{ active_user_label }}</span>
+              <span class="caret">▾</span>
+            </button>
+            <div class="topbar-menu" id="userMenu">
+              <div class="topbar-menu-header">Act as User</div>
+              {% for u_item in available_user_items %}
+              <a href="{{ url_for('set_context', user=u_item.username, next=request.path) }}"
+                class="{% if u_item.username == active_user %}active{% endif %}">{{ u_item.label }}</a>
+              {% endfor %}
+            </div>
+          </div>
+          {% else %}
+          {% if is_admin %}
+          <a href="{{ url_for('set_context', user=current_user, next=request.path) }}" class="topbar-pill" title="Click to reset to defaults">
+            <span class="topbar-label"></span>
+            <span class="topbar-val">{{ active_user_label }}</span>
+          </a>
+          {% else %}
+          <div class="topbar-pill" title="Logged in user">
+            <span class="topbar-label"></span>
+            <span class="topbar-val">{{ active_user_label }}</span>
+          </div>
+          {% endif %}
+          {% endif %}
+          {% endif %}
+        </div>
+
+        <div class="identity-auth">
+          {% if current_user %}
+          <a href="{{ url_for('logout') }}" class="topbar-auth-link" title="{{ current_user }}">Logout</a>
+          {% else %}
+          <a href="{{ url_for('login') }}" class="topbar-auth-link">Login</a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Top Bar 2: Page Navigation as before -->
+  <nav class="nav" id="mainNav">
+    <div class="nav-inner">
+      <div class="nav-mobile-bar">
+        <span class="nav-mobile-title">
+          {% if current_page == url_for('home') %}Home
+          {% elif current_page == url_for('annual_results') %}Annual results
+          {% elif current_page == url_for('agreements') %}Major agreements
+          {% elif current_page == url_for('companies') %}Major companies
+          {% elif current_page == url_for('example') %}Example
+          {% elif current_page == url_for('export') %}Export
+          {% elif enable_survey and current_page == url_for('survey') %}Ad hoc survey
+          {% elif is_admin and current_page == url_for('admin') %}Admin
+          {% else %}Menu{% endif %}
+        </span>
+        <button type="button" class="mobile-nav-toggle" id="mobileNavToggle" onclick="toggleMobileNav(event)"
+          aria-label="Toggle navigation menu" aria-expanded="false">
+          <span class="hamburger-lines">
+            <span></span><span></span><span></span>
+          </span>
+          <span class="mobile-nav-btn-text">Menu</span>
+        </button>
+      </div>
+
+      <div class="links" id="navLinks">
+        {% set nav_pages = [
+        ('home', 'Home'),
+        ('annual_results', 'Annual results'),
+        ('agreements', 'Major agreements'),
+        ('companies', 'Major companies'),
+        ('example', 'Example'),
+        ('export', 'Export'),
+        ] %}
+        {% for route, label in nav_pages %}
+        {% set href = url_for(route, org=view_org) if is_admin and view_org and view_org != 'None' else url_for(route) %}
+        <a href="{{ href }}" {% if current_page==url_for(route) %}class="active-tab" {% endif %}>{{ label }}</a>
+        {% endfor %}
+        {% if enable_survey %}
+        <a href="{{ url_for('survey') }}" {% if current_page==url_for('survey') %}class="active-tab" {% endif %}>Ad hoc
+          survey</a>
+        {% endif %}
+        {% if is_admin %}
+        {% set admin_href = url_for('admin', org=view_org) if view_org and view_org != 'None' else url_for('admin') %}
+        <a href="{{ admin_href }}" {% if current_page==url_for('admin') %}class="active-tab" {% endif %}
+          style="font-weight:600;">Admin</a>
+        {% endif %}
+      </div>
+    </div>
+  </nav>
+  <div class="container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    {% for category, message in messages %}
+    <div class="flash{% if category == 'error' %} error{% endif %}">{{ message }}</div>
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+  </div>
+  <div id="popupBackdrop" class="popup-backdrop">
+    <div class="popup-card" onclick="event.stopPropagation()">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.8rem;">
+        <h3 id="popupHeader" style="margin:0; font-size:1.05rem; color:#1a3a5c;">Edit entry</h3>
+        <button type="button" onclick="closePopup()"
+          style="background:none; border:none; font-size:1.3rem; cursor:pointer; color:#888; line-height:1;">&times;</button>
+      </div>
+      <label for="popupTitleInput" style="font-weight:600; margin-bottom:0.25rem; font-size:0.8rem; color:#444;">Short
+        title / summary:</label>
+      <input type="text" id="popupTitleInput" maxlength="60" placeholder="Title (appears in table cell)"
+        style="width:100%; padding:0.4rem; border:1px solid #ccc; border-radius:4px; font-size:0.85rem; margin-bottom:0.8rem; box-sizing:border-box;">
+      <div
+        style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.25rem; font-size:0.8rem;">
+        <label for="popupContentInput" style="font-weight:600; margin:0; color:#444;">Detailed content:</label>
+        <span id="popupWordCountDisplay" style="font-weight:600; font-size:0.75rem; color:#666;">0 words</span>
+      </div>
+      <textarea id="popupContentInput" rows="5" placeholder="Detailed content..."
+        style="width:100%; padding:0.5rem; border:1px solid #ccc; border-radius:4px; font-size:0.85rem; resize:vertical; line-height:1.4; box-sizing:border-box;"
+        oninput="handlePopupContentInput(this)"></textarea>
+      <div class="popup-actions" style="margin-top:1rem;">
+        <button type="button" class="btn-cancel" onclick="closePopup()">Cancel</button>
+        <button type="button" class="btn-primary" onclick="savePopup()">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/layout.js') }}"></script>
+</body>
+
+</html>
